@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Home, Utensils, LayoutGrid, Phone } from 'lucide-react';
+import { Home, Utensils, LayoutGrid, HelpCircle } from 'lucide-react';
 
 const Header: React.FC = () => {
   return (
@@ -56,13 +56,24 @@ const Header: React.FC = () => {
               </li>
               <li>
                 <NavLink 
-                  to="/contacto" 
+                  to="/eventos" 
                   className={({ isActive }) => 
                     `flex flex-col items-center text-white/90 hover:text-white transition-colors ${isActive ? 'text-white font-medium' : ''}`
                   }
                 >
-                  <Phone className="h-5 w-5" />
-                  <span className="text-xs mt-1">Contacto</span>
+                  <span className="h-5 w-5 flex items-center justify-center">📅</span>
+                  <span className="text-xs mt-1">Organizador de horarios</span>
+                </NavLink>
+              </li>
+              <li>
+                <NavLink 
+                  to="/faqs" 
+                  className={({ isActive }) => 
+                    `flex flex-col items-center text-white/90 hover:text-white transition-colors ${isActive ? 'text-white font-medium' : ''}`
+                  }
+                >
+                  <HelpCircle className="h-5 w-5" />
+                  <span className="text-xs mt-1">FAQs</span>
                 </NavLink>
               </li>
             </ul>

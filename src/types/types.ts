@@ -1,10 +1,16 @@
+// src/types/types.ts
+export interface Position {
+  x: number;
+  y: number;
+}
+
 export interface Table {
   id: string;
-  position: {
-    x: number;
-    y: number;
-  };
+  position: Position;
   isUsed: boolean;
   guests: string[];
-  shape: 'circle' | 'square';
+  shape: 'circle' | 'square' | 'rectangle';
+  isAssignable: boolean;
+  width?: number;
+  height?: number;
 }

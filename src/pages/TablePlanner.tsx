@@ -1,3 +1,6 @@
+// -----------------------------
+// TablePlanner.tsx – 24 mesas 6‑6‑5‑4‑3 + Escenario, DJ, Oficina y Pasarela
+// -----------------------------
 import React, { useState } from 'react';
 import { AlertCircle, Save } from 'lucide-react';
 import FloorPlan from '../components/FloorPlan';
@@ -5,172 +8,173 @@ import GuestAssigner from '../components/GuestAssigner';
 import TableSummary from '../components/TableSummary';
 import { Table } from '../types/types';
 
-// Initial tables data
+/*****  Coordenadas base  *****/
+const ORIGIN_X = 160;    // margen izquierdo visual
+const ORIGIN_Y =120;    // margen superior de la primera fila
+const COL_SPACING =120;//separación horizontal entre centros
+const ROW_SPACING = 110;           // separación vertical entre centros
+const CIRCLE_SIZE = 70;        // diámetro de las mesas
+
+/*****  Helpers  *****/
+const createTable = (id: string, col: number, row: number): Table => ({
+  id,
+  position: {
+    x: ORIGIN_X + col * COL_SPACING,
+    y: ORIGIN_Y + row * ROW_SPACING,
+  },
+  shape: 'circle',
+  width: CIRCLE_SIZE,
+  height: CIRCLE_SIZE,
+  isAssignable: true,
+  guests: [],
+  isUsed: false,
+});
+
+const createFixed = (id: string, x: number, y: number, width: number, height: number): Table => ({
+  id,
+  position: { x, y },
+  shape: width === height ? 'square' : 'rectangle',
+  width,
+  height,
+  isAssignable: false,
+  guests: [],
+  isUsed: false,
+});
+
+/*****  Distribución de elementos  *****/
+//   Filas de mesas: 6,6,5,4,3  (de arriba hacia abajo)
+//   DJ (izq)  |  Pasarela  |  Oficina (der)   – todos alineados en la parte baja
+//   Escenario arriba centrado, ligeramente separado de la fila 0
+
 const initialTables: Table[] = [
-  { id: 'M1', position: { x: 100, y: 100 }, isUsed: false, guests: [], shape: 'circle' },
-  { id: 'M2', position: { x: 250, y: 100 }, isUsed: false, guests: [], shape: 'circle' },
-  { id: 'M3', position: { x: 400, y: 100 }, isUsed: false, guests: [], shape: 'circle' },
-  { id: 'M4', position: { x: 100, y: 250 }, isUsed: false, guests: [], shape: 'circle' },
-  { id: 'M5', position: { x: 250, y: 250 }, isUsed: false, guests: [], shape: 'circle' },
-  { id: 'M6', position: { x: 400, y: 250 }, isUsed: false, guests: [], shape: 'circle' },
-  { id: 'M7', position: { x: 100, y: 400 }, isUsed: false, guests: [], shape: 'square' },
-  { id: 'M8', position: { x: 250, y: 400 }, isUsed: false, guests: [], shape: 'square' },
-  { id: 'M9', position: { x: 400, y: 400 }, isUsed: false, guests: [], shape: 'square' },
-  { id: 'M10', position: { x: 550, y: 250 }, isUsed: false, guests: [], shape: 'square' },
+  // ── Elementos fijos ──────────────────────────────────────────
+  // Escenario centrado sobre las 6 mesas superiores
+  createFixed(
+    'ESCENARIO',
+    ORIGIN_X + COL_SPACING * 2.5,          // centro entre col 2‑3   (0‑5 totales)
+    ORIGIN_Y - ROW_SPACING /0,            // media fila arriba (visible)
+    COL_SPACING * 3,                       // ancho ≈ 3 mesas
+    60,
+  ),
+
+  // DJ y Oficina ocupan la misma fila que la última línea de mesas (fila 4)
+  createFixed('DJ', ORIGIN_X - 90 + 30, ORIGIN_Y + ROW_SPACING * 4, 100, 100),
+  createFixed('OFICINA', ORIGIN_X + COL_SPACING * 5 + 30, ORIGIN_Y + ROW_SPACING * 4, 100, 100),
+
+  // Pasarela conecta la parte baja entre DJ y Oficina
+  createFixed(
+    'PASARELA',
+    ORIGIN_X - 90 + (COL_SPACING * 6.2) / 2, // centro entre extremos
+    ORIGIN_Y + ROW_SPACING * 4 + CIRCLE_SIZE / 2 + 10, // justo bajo la fila 4
+    COL_SPACING * 5,                        // alcanza de DJ a Oficina
+    15,
+  ),
+
+  // ── Mesas circulares ─────────────────────────────────────────
+  // Fila 0 (6 mesas)
+  ...Array.from({ length: 6 }, (_, i) => createTable(`M${i + 1}`, i, 0)),
+  // Fila 1 (6 mesas)
+  ...Array.from({ length: 6 }, (_, i) => createTable(`M${i + 7}`, i, 1)),
+  // Fila 2 (5 mesas, columnas 0‑4)
+  ...Array.from({ length: 5 }, (_, i) => createTable(`M${i + 13}`, i, 2)),
+  // Fila 3 (4 mesas, columnas 1‑4)
+  ...Array.from({ length: 4 }, (_, i) => createTable(`M${i + 18}`, i + 1, 3)),
+  // Fila 4 (3 mesas, columnas 2‑4)
+  ...Array.from({ length: 3 }, (_, i) => createTable(`M${i + 22}`, i + 2, 4)),
 ];
 
+/*****  Componente principal  *****/
 const TablePlanner: React.FC = () => {
   const [tables, setTables] = useState<Table[]>(initialTables);
-  const [selectedTable, setSelectedTable] = useState<Table | null>(null);
-  const [showGuestModal, setShowGuestModal] = useState(false);
-  const [layoutSaved, setLayoutSaved] = useState(false);
-  
-  const handleTableMove = (id: string, newPosition: { x: number, y: number }) => {
-    setTables(prevTables => 
-      prevTables.map(table => 
-        table.id === id ? { ...table, position: newPosition } : table
-      )
-    );
-    setLayoutSaved(false);
+  const [selected, setSelected] = useState<Table | null>(null);
+  const [showModal, setShowModal] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  const moveTable = (id: string, pos: { x: number; y: number }) =>
+    setTables(prev => prev.map(t => (t.id === id && t.isAssignable ? { ...t, position: pos } : t)));
+
+  const selectTable = (id: string) => {
+    const t = tables.find(tb => tb.id === id && tb.isAssignable);
+    if (!t) return;
+    setSelected(t);
+    setShowModal(true);
   };
-  
-  const handleTableSelect = (tableId: string) => {
-    const table = tables.find(t => t.id === tableId) || null;
-    setSelectedTable(table);
-    setShowGuestModal(true);
+
+  const updateGuests = (id: string, guests: string[]) => {
+    setTables(prev => prev.map(t => (t.id === id ? { ...t, guests, isUsed: guests.length > 0 } : t)));
+    setShowModal(false);
+    setSelected(null);
   };
-  
-  const handleGuestUpdate = (tableId: string, guests: string[]) => {
-    setTables(prevTables => 
-      prevTables.map(table => 
-        table.id === tableId ? { ...table, guests, isUsed: guests.length > 0 } : table
-      )
-    );
-    setShowGuestModal(false);
-    setSelectedTable(null);
-    setLayoutSaved(false);
-  };
-  
-  const handleCloseModal = () => {
-    setShowGuestModal(false);
-    setSelectedTable(null);
-  };
-  
-  const saveLayout = () => {
-    // In a real app, this would save to backend
-    setLayoutSaved(true);
-    
-    // Just for demo, hide the notification after 3 seconds
-    setTimeout(() => {
-      setLayoutSaved(false);
-    }, 3000);
-  };
-  
-  const usedTables = tables.filter(table => table.isUsed);
-  const tableWarnings = tables.filter(table => 
-    (table.guests.length > 0 && (table.guests.length < 8 || table.guests.length > 11))
-  );
-  
+
+  const used     = tables.filter(t => t.isAssignable && t.isUsed);
+  const warnings = tables.filter(t => t.isAssignable && (t.guests.length < 8 || t.guests.length > 11));
+
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold text-gray-800 mb-2 text-center">Planificador de Mesas</h1>
-      <p className="text-center text-gray-600 mb-8">Organiza tus mesas: Arrástralas y agrega invitados. El sistema actualizará automáticamente la disponibilidad.</p>
-      
-      {/* Notification for saved layout */}
-      {layoutSaved && (
-        <div className="fixed top-4 right-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded z-50 flex items-center">
-          <span className="font-medium mr-2">¡Guardado exitosamente!</span>
-          <button onClick={() => setLayoutSaved(false)} className="text-green-700">×</button>
+      <h1 className="text-3xl font-bold text-center mb-6">Comanda de Armado</h1>
+
+      {saved && (
+        <div className="fixed top-4 right-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded flex items-center z-50">
+          <span className="mr-2 font-medium">¡Guardado exitosamente!</span>
+          <button className="text-green-700" onClick={() => setSaved(false)}>×</button>
         </div>
       )}
-      
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left sidebar - Tables summary */}
+        {/* Sidebar */}
         <div className="lg:col-span-1">
           <div className="bg-white rounded-lg shadow-md p-6 mb-6">
             <h2 className="text-xl font-semibold mb-4">Resumen de Mesas</h2>
             <div className="p-4 bg-[#FF6B35]/10 rounded-lg mb-4">
-              <p className="font-medium">Mesas utilizadas: {usedTables.length}/{tables.length}</p>
+              <p className="font-medium">Mesas utilizadas: {used.length}/{tables.filter(t => t.isAssignable).length}</p>
             </div>
-            
-            {tableWarnings.length > 0 && (
+            {warnings.length > 0 && (
               <div className="p-4 bg-red-50 border border-red-100 rounded-lg mb-4">
                 <div className="flex items-start">
-                  <AlertCircle className="w-5 h-5 text-red-500 mr-2 flex-shrink-0 mt-0.5" />
+                  <AlertCircle className="w-5 h-5 text-red-500 mr-2" />
                   <div>
-                    <h3 className="font-medium text-red-800">Advertencias:</h3>
-                    <ul className="mt-2 text-sm text-red-700 space-y-1">
-                      {tableWarnings.map(table => (
-                        <li key={table.id}>
-                          {table.guests.length < 8 
-                            ? `La mesa ${table.id} tiene menos de 8 invitados (${table.guests.length})` 
-                            : `La mesa ${table.id} tiene más de 11 invitados (${table.guests.length})`}
-                        </li>
+                    <h3 className="font-medium text-red-800 mb-1">Advertencias:</h3>
+                    <ul className="text-sm text-red-700 space-y-1">
+                      {warnings.map(t => (
+                        <li key={t.id}>{`Mesa ${t.id}: ${t.guests.length} invitados`}</li>
                       ))}
                     </ul>
                   </div>
                 </div>
               </div>
             )}
-            
-            <TableSummary 
-              tables={tables} 
-              onTableSelect={handleTableSelect} 
-            />
-            
-            <button 
-              onClick={saveLayout}
-              className="w-full mt-4 bg-[#FF6B35] text-white py-2 px-4 rounded-md hover:bg-[#FF6B35]/90 transition-colors flex items-center justify-center"
+
+            <TableSummary tables={tables.filter(t => t.isAssignable)} onTableSelect={selectTable} />
+
+            <button
+              onClick={() => { setSaved(true); setTimeout(() => setSaved(false), 3000); }}
+              className="w-full mt-4 bg-[#FF6B35] hover:bg-[#FF6B35]/90 text-white py-2 px-4 rounded-md flex items-center justify-center"
             >
               <Save className="w-4 h-4 mr-2" />
               Guardar distribución
             </button>
           </div>
-          
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-semibold mb-4">Leyenda</h2>
-            <div className="space-y-3">
-              <div className="flex items-center">
-                <div className="w-6 h-6 rounded-full bg-[#FF6B35] mr-3"></div>
-                <span>Mesa ocupada</span>
-              </div>
-              <div className="flex items-center">
-                <div className="w-6 h-6 rounded-full bg-gray-200 border border-gray-300 mr-3"></div>
-                <span>Mesa libre</span>
-              </div>
-              <div className="flex items-center">
-                <div className="w-6 h-6 rounded-full bg-white border-2 border-red-500 mr-3"></div>
-                <span>Mesa con advertencia</span>
-              </div>
-            </div>
-          </div>
         </div>
-        
-        {/* Center and right - Floor plan */}
+
+        {/* Plano */}
         <div className="lg:col-span-2">
           <div className="bg-white rounded-lg shadow-md p-6">
             <h2 className="text-xl font-semibold mb-4">Plano del Salón</h2>
-            <p className="text-sm text-gray-600 mb-4">Haz clic en una mesa para asignar invitados o arrástrala para cambiar su posición.</p>
-            
+            <p className="text-sm text-gray-600 mb-4">Deslizá una mesa y hacé clic para asignar invitados.</p>
             <div className="bg-gray-100 rounded-lg border border-gray-200 overflow-hidden">
-              <FloorPlan 
+              <FloorPlan
                 tables={tables}
-                onTableMove={handleTableMove}
-                onTableSelect={handleTableSelect}
-                tableWarnings={tableWarnings.map(t => t.id)}
+                onTableMove={moveTable}
+                onTableSelect={selectTable}
+                tableWarnings={warnings.map(t => t.id)}
               />
             </div>
           </div>
         </div>
       </div>
-      
-      {/* Guest assignment modal */}
-      {showGuestModal && selectedTable && (
-        <GuestAssigner 
-          table={selectedTable}
-          onClose={handleCloseModal}
-          onSave={handleGuestUpdate}
-        />
+
+      {showModal && selected && (
+        <GuestAssigner table={selected} onClose={() => setShowModal(false)} onSave={updateGuests} />
       )}
     </div>
   );

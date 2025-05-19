@@ -24,7 +24,8 @@ const TableSummary: React.FC<TableSummaryProps> = ({ tables, onTableSelect }) =>
     if (!a.isUsed && b.isUsed) return 1;
     return a.id.localeCompare(b.id, undefined, { numeric: true });
   });
-  
+
+
   return (
     <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
       {sortedTables.length > 0 ? (

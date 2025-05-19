@@ -30,14 +30,6 @@ const Login: React.FC = () => {
             <LoginForm />
           </div>
           
-          <div className="bg-black/40 p-6 text-center">
-            <p className="text-orange-200/60">
-              Don't have an account?{' '}
-              <button className="text-orange-500 hover:text-orange-400 font-semibold transition-colors">
-                Create Account
-              </button>
-            </p>
-          </div>
         </div>
       </motion.div>
     </div>

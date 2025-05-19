@@ -8,9 +8,10 @@ import {
 import Header from './components/Header';
 import Home from './pages/Home';
 import TablePlanner from './pages/TablePlanner';
-import Catering from './pages/Catering';
-import Contact from './pages/Contact';
+import Catering from './pages/Catering';;
 import Login from './pages/Login';
+import EventSchedule from './pages/EventSchedule';
+import Faqs from './pages/Faqs';
 
 function AppRoutes() {
   const location = useLocation();
@@ -36,7 +37,8 @@ function AppRoutes() {
           <Route path="/home" element={<Home />} />
           <Route path="/mesas" element={<TablePlanner />} />
           <Route path="/catering" element={<Catering />} />
-          <Route path="/contacto" element={<Contact />} />
+          <Route path="/faqs" element={<Faqs />} />
+          <Route path="/eventos" element={<EventSchedule />} />
         </Routes>
       </main>
       {!hideHeader && (
