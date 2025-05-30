@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import FormInput from './FormInput';
 import Button from './Button';
 import { motion } from 'framer-motion';
 import { Eye, EyeOff } from 'lucide-react';
 import { validateEmail, validatePassword } from '../utils/validation.tsx';
+
 const LoginForm: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -12,7 +14,10 @@ const LoginForm: React.FC = () => {
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loginError, setLoginError] = useState('');
   
+  const navigate = useNavigate();
+
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setEmail(value);
@@ -25,8 +30,9 @@ const LoginForm: React.FC = () => {
     setPasswordError(validatePassword(value));
   };
   
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setLoginError('');
     
     const emailValidationError = validateEmail(email);
     const passwordValidationError = validatePassword(password);
@@ -37,12 +43,31 @@ const LoginForm: React.FC = () => {
     if (!emailValidationError && !passwordValidationError) {
       setIsSubmitting(true);
       
-      // Simulate API call
-      setTimeout(() => {
+      try {
+        // Simulación de llamada a API
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
+        // Aquí iría la lógica real de autenticación
+        // Por ahora simulamos un login exitoso
+        const loginSuccess = true; // Cambiar a false para simular error
+        
+        if (loginSuccess) {
+          console.log('Login successful, redirecting to home...');
+          // Guardar en localStorage si "Remember me" está marcado
+          if (rememberMe) {
+            localStorage.setItem('rememberedEmail', email);
+          }
+          // Redirigir a Home
+          navigate('/home');
+        } else {
+          setLoginError('Invalid email or password');
+        }
+      } catch (error) {
+        setLoginError('An error occurred during login');
+        console.error('Login error:', error);
+      } finally {
         setIsSubmitting(false);
-        console.log('Login attempt with:', { email, password, rememberMe });
-        // Here you would normally handle authentication
-      }, 1500);
+      }
     }
   };
   
@@ -58,6 +83,12 @@ const LoginForm: React.FC = () => {
       animate={{ opacity: 1 }}
       transition={{ delay: 0.3, duration: 0.5 }}
     >
+      {loginError && (
+        <div className="p-3 bg-red-100 border border-red-400 text-red-700 rounded-md">
+          {loginError}
+        </div>
+      )}
+      
       <FormInput
         id="email"
         type="email"
@@ -125,4 +156,4 @@ const LoginForm: React.FC = () => {
   );
 };
 
-export default LoginForm
+export default LoginForm;

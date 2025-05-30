@@ -1,6 +1,8 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { Home, Utensils, LayoutGrid, HelpCircle } from 'lucide-react';
+import { Users } from 'lucide-react';
+
 
 const Header: React.FC = () => {
   return (
@@ -22,9 +24,9 @@ const Header: React.FC = () => {
           <nav className="md:flex md:items-center mt-3 md:mt-0">
             <ul className="flex justify-around md:space-x-8">
               <li>
-                <NavLink 
-                  to="/" 
-                  className={({ isActive }) => 
+                <NavLink
+                  to="/"
+                  className={({ isActive }) =>
                     `flex flex-col items-center text-white/90 hover:text-white transition-colors ${isActive ? 'text-white font-medium' : ''}`
                   }
                 >
@@ -33,9 +35,9 @@ const Header: React.FC = () => {
                 </NavLink>
               </li>
               <li>
-                <NavLink 
-                  to="/catering" 
-                  className={({ isActive }) => 
+                <NavLink
+                  to="/catering"
+                  className={({ isActive }) =>
                     `flex flex-col items-center text-white/90 hover:text-white transition-colors ${isActive ? 'text-white font-medium' : ''}`
                   }
                 >
@@ -44,9 +46,9 @@ const Header: React.FC = () => {
                 </NavLink>
               </li>
               <li>
-                <NavLink 
-                  to="/mesas" 
-                  className={({ isActive }) => 
+                <NavLink
+                  to="/mesas"
+                  className={({ isActive }) =>
                     `flex flex-col items-center text-white/90 hover:text-white transition-colors ${isActive ? 'text-white font-medium' : ''}`
                   }
                 >
@@ -55,9 +57,9 @@ const Header: React.FC = () => {
                 </NavLink>
               </li>
               <li>
-                <NavLink 
-                  to="/eventos" 
-                  className={({ isActive }) => 
+                <NavLink
+                  to="/eventos"
+                  className={({ isActive }) =>
                     `flex flex-col items-center text-white/90 hover:text-white transition-colors ${isActive ? 'text-white font-medium' : ''}`
                   }
                 >
@@ -66,9 +68,9 @@ const Header: React.FC = () => {
                 </NavLink>
               </li>
               <li>
-                <NavLink 
-                  to="/faqs" 
-                  className={({ isActive }) => 
+                <NavLink
+                  to="/faqs"
+                  className={({ isActive }) =>
                     `flex flex-col items-center text-white/90 hover:text-white transition-colors ${isActive ? 'text-white font-medium' : ''}`
                   }
                 >
@@ -76,6 +78,19 @@ const Header: React.FC = () => {
                   <span className="text-xs mt-1">FAQs</span>
                 </NavLink>
               </li>
+              <li>
+                <NavLink
+                  to="/invitados"
+                  className={({ isActive }) =>
+                    `flex flex-col items-center text-white/90 hover:text-white transition-colors ${isActive ? 'text-white font-medium' : ''}`
+                  }
+                >
+                  <Users className="h-5 w-5" />
+                  <span className="text-xs mt-1">Invitados</span>
+                </NavLink>
+              </li>
+
+
             </ul>
           </nav>
         </div>

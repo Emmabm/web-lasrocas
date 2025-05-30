@@ -4,13 +4,15 @@ export interface Position {
   y: number;
 }
 
-export interface Table {
+export type Table = {
   id: string;
-  position: Position;
-  isUsed: boolean;
-  guests: string[];
+  position: { x: number; y: number };
   shape: 'circle' | 'square' | 'rectangle';
+  width: number;
+  height: number;
   isAssignable: boolean;
-  width?: number;
-  height?: number;
-}
+  guests: string[];
+  isUsed: boolean;
+  tableclothColor?: string;
+  centerpiece?: string;
+};

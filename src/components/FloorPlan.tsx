@@ -77,7 +77,6 @@ const FloorPlan: React.FC<{
             style={{
               ...style,
               backgroundColor: '#D1D5DB',
-              border: '1px solid #9CA3AF',
               borderRadius: 4,
               pointerEvents: 'none',
               textAlign: 'center',

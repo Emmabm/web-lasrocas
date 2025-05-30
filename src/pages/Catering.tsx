@@ -27,14 +27,13 @@ const cateringOptions: CateringOption[] = [
   // Bebidas
   { id: 'dr1', name: 'Barra de bebidas', description: 'Incluye agua, gaseosas, vino y cerveza', price: 2000, category: 'drink' },
   { id: 'dr2', name: 'Servicio de café', description: 'Café, té y petit fours', price: 800, category: 'drink' },
- 
+  { id: 'dr3', name: 'Tragos para adultos', description: 'Cócteles clásicos y de autor (adicional)', price: 1500, category: 'drink' },
+  { id: 'dr4', name: 'Licuados sin alcohol', description: 'Licuados de frutas frescas (adicional)', price: 1000, category: 'drink' },
 
   // Adicionales
   { id: 'ad1', name: 'Panchos', description: 'Hot dogs estilo gourmet - mínimo 50 unidades', price: 400, category: 'additional' },
   { id: 'ad2', name: 'Hamburguesas', description: 'Hamburguesas premium - mínimo 50 unidades', price: 700, category: 'additional' },
   { id: 'ad3', name: 'Choripanes', description: 'Clásicos choripanes - mínimo 50 unidades', price: 500, category: 'additional' },
-   { id: 'dr3', name: 'Tragos para adultos', description: 'Cócteles clásicos y de autor (adicional)', price: 1500, category: 'drink' },
-  { id: 'dr4', name: 'Licuados sin alcohol', description: 'Licuados de frutas frescas (adicional)', price: 1000, category: 'drink' },
 ];
 
 const TOTAL_STEPS = 5;
@@ -42,6 +41,7 @@ const TOTAL_STEPS = 5;
 const Catering: React.FC = () => {
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
   const [currentStep, setCurrentStep] = useState(1);
+  const [showSummary, setShowSummary] = useState(false);
 
   const toggleOption = (id: string) => {
     setSelectedOptions(prev =>
@@ -57,10 +57,15 @@ const Catering: React.FC = () => {
   }, 0);
 
   const nextStep = () => {
-    setCurrentStep(prev => Math.min(prev + 1, TOTAL_STEPS));
+    if (currentStep < TOTAL_STEPS) {
+      setCurrentStep(prev => prev + 1);
+    } else {
+      setShowSummary(true);
+    }
   };
 
   const prevStep = () => {
+    setShowSummary(false);
     setCurrentStep(prev => Math.max(prev - 1, 1));
   };
 
@@ -82,6 +87,37 @@ const Catering: React.FC = () => {
     </ol>
   );
 
+  if (showSummary) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold text-gray-800 mb-6 text-center">Resumen de Catering</h1>
+        <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-md p-6">
+          <h2 className="text-xl font-semibold mb-4">Tu selección</h2>
+          <div className="mb-6 space-y-3">
+            {selectedOptions.map(id => {
+              const option = cateringOptions.find(opt => opt.id === id);
+              return option ? (
+                <div key={id} className="border-b pb-2">
+                  <h3 className="font-medium">{option.name}</h3>
+                  <p className="text-sm text-gray-600">{option.description}</p>
+                </div>
+              ) : null;
+            })}
+          </div>
+          <div className="border-t pt-4 text-xl font-bold text-[#FF6B35] text-right">
+            Total: ${totalPrice.toLocaleString()}
+          </div>
+          <button
+            onClick={() => setShowSummary(false)}
+            className="mt-6 px-4 py-2 rounded-md bg-[#FF6B35] text-white hover:bg-[#FF6B35]/90"
+          >
+            Volver a editar
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold text-gray-800 mb-6 text-center">Selección de Catering</h1>
@@ -99,7 +135,7 @@ const Catering: React.FC = () => {
               <h2 className="text-xl font-semibold mb-4">Selecciona las entradas</h2>
               <div className="space-y-3">
                 {cateringOptions.filter(opt => opt.category === 'appetizer').map(option => (
-                  <OptionCard key={option.id} option={option} selected={selectedOptions.includes(option.id)} onToggle={toggleOption} />
+                  <OptionCard key={option.id} option={option} selected={selectedOptions.includes(option.id)} onToggle={toggleOption} hidePrice />
                 ))}
               </div>
             </div>
@@ -110,7 +146,7 @@ const Catering: React.FC = () => {
               <h2 className="text-xl font-semibold mb-4">Selecciona los platos principales</h2>
               <div className="space-y-3">
                 {cateringOptions.filter(opt => opt.category === 'main').map(option => (
-                  <OptionCard key={option.id} option={option} selected={selectedOptions.includes(option.id)} onToggle={toggleOption} />
+                  <OptionCard key={option.id} option={option} selected={selectedOptions.includes(option.id)} onToggle={toggleOption} hidePrice />
                 ))}
               </div>
             </div>
@@ -121,7 +157,7 @@ const Catering: React.FC = () => {
               <h2 className="text-xl font-semibold mb-4">Selecciona los postres</h2>
               <div className="space-y-3">
                 {cateringOptions.filter(opt => opt.category === 'dessert').map(option => (
-                  <OptionCard key={option.id} option={option} selected={selectedOptions.includes(option.id)} onToggle={toggleOption} />
+                  <OptionCard key={option.id} option={option} selected={selectedOptions.includes(option.id)} onToggle={toggleOption} hidePrice />
                 ))}
               </div>
             </div>
@@ -133,7 +169,7 @@ const Catering: React.FC = () => {
               <p className="text-sm text-gray-500 mb-4 italic">Cada trago/licuado adicional se cobra por persona.</p>
               <div className="space-y-3">
                 {cateringOptions.filter(opt => opt.category === 'drink').map(option => (
-                  <OptionCard key={option.id} option={option} selected={selectedOptions.includes(option.id)} onToggle={toggleOption} />
+                  <OptionCard key={option.id} option={option} selected={selectedOptions.includes(option.id)} onToggle={toggleOption} hidePrice />
                 ))}
               </div>
             </div>
@@ -145,36 +181,10 @@ const Catering: React.FC = () => {
               <p className="text-sm text-gray-500 mb-4 italic">Cada comida adicional se cobra por cantidad.</p>
               <div className="space-y-3">
                 {cateringOptions.filter(opt => opt.category === 'additional').map(option => (
-                  <OptionCard key={option.id} option={option} selected={selectedOptions.includes(option.id)} onToggle={toggleOption} />
+                  <OptionCard key={option.id} option={option} selected={selectedOptions.includes(option.id)} onToggle={toggleOption} hidePrice />
                 ))}
               </div>
             </div>
-          )}
-        </div>
-
-        {/* Summary */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4">Resumen de selección</h2>
-          {selectedOptions.length > 0 ? (
-            <div>
-              <div className="mb-4 space-y-2">
-                {selectedOptions.map(id => {
-                  const option = cateringOptions.find(opt => opt.id === id);
-                  return option ? (
-                    <div key={id} className="flex justify-between">
-                      <span>{option.name}</span>
-                      <span>${option.price}</span>
-                    </div>
-                  ) : null;
-                })}
-                <div className="border-t pt-2 mt-2 font-medium flex justify-between">
-                  <span>Total</span>
-                  <span>${totalPrice.toLocaleString()}</span>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <p className="text-gray-500 italic">No has seleccionado ninguna opción todavía.</p>
           )}
         </div>
 
@@ -188,21 +198,13 @@ const Catering: React.FC = () => {
             Anterior
           </button>
 
-          {currentStep < TOTAL_STEPS ? (
-            <button
-              onClick={nextStep}
-              className="px-4 py-2 rounded-md bg-[#FF6B35] text-white hover:bg-[#FF6B35]/90"
-            >
-              Siguiente
-            </button>
-          ) : (
-            <button
-              className="px-4 py-2 rounded-md bg-[#FF6B35] text-white hover:bg-[#FF6B35]/90 flex items-center"
-            >
-              Confirmar selección
-              <ChevronRight className="w-4 h-4 ml-1" />
-            </button>
-          )}
+          <button
+            onClick={nextStep}
+            className="px-4 py-2 rounded-md bg-[#FF6B35] text-white hover:bg-[#FF6B35]/90 flex items-center"
+          >
+            {currentStep < TOTAL_STEPS ? 'Siguiente' : 'Ver resumen'}
+            <ChevronRight className="w-4 h-4 ml-1" />
+          </button>
         </div>
       </div>
     </div>
@@ -213,9 +215,10 @@ interface OptionCardProps {
   option: CateringOption;
   selected: boolean;
   onToggle: (id: string) => void;
+  hidePrice?: boolean;
 }
 
-const OptionCard: React.FC<OptionCardProps> = ({ option, selected, onToggle }) => (
+const OptionCard: React.FC<OptionCardProps> = ({ option, selected, onToggle, hidePrice = false }) => (
   <div
     className={`border rounded-lg p-4 cursor-pointer transition-all ${selected ? 'border-[#FF6B35] bg-[#FF6B35]/5' : 'border-gray-200 hover:border-gray-300'}`}
     onClick={() => onToggle(option.id)}
@@ -228,9 +231,11 @@ const OptionCard: React.FC<OptionCardProps> = ({ option, selected, onToggle }) =
         <h3 className="font-medium">{option.name}</h3>
         <p className="text-sm text-gray-600">{option.description}</p>
       </div>
-      <div className="ml-2 text-[#FF6B35] font-medium">
-        ${option.price}
-      </div>
+      {!hidePrice && (
+        <div className="ml-2 text-[#FF6B35] font-medium">
+          ${option.price}
+        </div>
+      )}
     </div>
   </div>
 );

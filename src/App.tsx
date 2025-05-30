@@ -12,6 +12,9 @@ import Catering from './pages/Catering';;
 import Login from './pages/Login';
 import EventSchedule from './pages/EventSchedule';
 import Faqs from './pages/Faqs';
+import Guests from "./pages/Guests"; 
+
+
 
 function AppRoutes() {
   const location = useLocation();
@@ -39,6 +42,8 @@ function AppRoutes() {
           <Route path="/catering" element={<Catering />} />
           <Route path="/faqs" element={<Faqs />} />
           <Route path="/eventos" element={<EventSchedule />} />
+          <Route path="/invitados" element={<Guests />} />
+      
         </Routes>
       </main>
       {!hideHeader && (
