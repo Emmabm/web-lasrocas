@@ -3,4 +3,5 @@ export type Guest = {
   firstName: string;
   lastName: string;
   dni: string;
+  gender: "male" | "female";
 };

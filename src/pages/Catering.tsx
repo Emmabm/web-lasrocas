@@ -1,114 +1,188 @@
 import React, { useState } from 'react';
 import { Check, ChevronRight } from 'lucide-react';
 
+interface MenuOption {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  includes: string[];
+  allowCustomization: boolean;
+}
+
+const menuOptions: MenuOption[] = [
+  {
+    id: 'menu1',
+    name: 'Menú 1',
+    description: 'Menu Formal servido en mesa',
+    price: 8000,
+    includes: [
+      'Recepcion basica + cazuelas',
+      'Plato principal',
+      'Postre',
+      'Bebidas de recepción y cena/almuerzo',
+      'Bebidas de barra y comidas para el baile'
+    ],
+    allowCustomization: true
+  },
+  {
+    id: 'menu2',
+    name: 'Menú 2',
+    description: 'Menu Formal servido en mesa',
+    price: 9500,
+    includes: [
+      'Recepcion basica',
+      'Plato de entrada',
+      'Plato principal',
+      'Postre',
+      'Bebidas de recepción y cena/almuerzo',
+      'Bebidas de barra y comidas para el baile'
+    ],
+    allowCustomization: true
+  },
+  {
+    id: 'menu-parrillada',
+    name: 'Menú Parrillada',
+    description: 'Menu Formal servido en mesa',
+    price: 7500,
+    includes: [
+      'Recepcion basica',
+      'Mesa de Fiambres',
+      'Parrillada',
+      'Postre',
+      'Bebidas de recepción y cena/almuerzo',
+      'Bebidas de barra y comidas para el baile'
+    ],
+    allowCustomization: false
+  },
+  {
+    id: 'menu-lunch',
+    name: 'Menú Lunch',
+    description: 'Opción ligera para reuniones de trabajo',
+    price: 6500,
+    includes: [
+      'Recepcion basica',
+      'Mesa de Fiambres',
+      'Variedades surtidas de mini postres',
+      'Bebidas de recepción y cena/almuerzo',
+      'Bebidas de barra y comidas para el baile'
+    ],
+    allowCustomization: true
+  }
+];
+
 interface CateringOption {
   id: string;
   name: string;
   description: string;
   price: number;
-  category: 'appetizer' | 'main' | 'dessert' | 'drink' | 'additional';
+  category: 'entrada' | 'principal' | 'postre';
 }
 
 const cateringOptions: CateringOption[] = [
-  // Entradas
-  { id: 'a1', name: 'Tabla de quesos', description: 'Selección de quesos gourmet con frutos secos y mermeladas', price: 2500, category: 'appetizer' },
-  { id: 'a2', name: 'Canapés variados', description: 'Surtido de canapés con diferentes coberturas', price: 1800, category: 'appetizer' },
-  { id: 'a3', name: 'Empanadas gourmet', description: 'Mini empanadas en variedad de sabores', price: 2000, category: 'appetizer' },
+  // Entradas (6)
+  { id: 'entrada1', name: 'Seleccion de Fiambres y queso', description: 'Jamon Serrano, bondiola de cerdo, lomito braseado a las hierbas, salame tandilero. Queso pategras, reggianito, provolone y feta de cabra, con nueces,pasas negras y rubias y totadas con pan de campo', price: 2000, category: 'entrada' },
+  { id: 'entrada2', name: 'Lasagna Bolognesa', description: 'mozarella, espinaca, jamon y queso y salsa bolognesa', price: 1800, category: 'entrada' },
+  { id: 'entrada3', name: 'Ensalada Caesar', description: 'Hojas verdes, pollo grillé, croutons, hebras de parmesano y aderezo Caesar', price: 1700, category: 'entrada' },
+  { id: 'entrada4', name: 'Toston de Campo', description: 'Toston de Campo con Jamon serrano y ensalada caponata', price: 1600, category: 'entrada' },
+  { id: 'entrada5', name: 'Provoleta', description: 'Provoleta a la plancha con vegetales grillados y chimichurri de hierbas', price: 1900, category: 'entrada' },
+  { id: 'entrada6', name: 'Milhojas de vegetales', description: 'milhojas de vegetales asados y queso fontinacon coulis de morrones y tomates asados ', price: 1800, category: 'entrada' },
 
-  // Principales
-  { id: 'm1', name: 'Lomo al horno', description: 'Lomo de ternera con guarnición de papas', price: 3500, category: 'main' },
-  { id: 'm2', name: 'Pollo a la naranja', description: 'Pollo glaseado con salsa de naranja y arroz', price: 3000, category: 'main' },
-  { id: 'm3', name: 'Risotto de hongos', description: 'Risotto cremoso con variedad de hongos', price: 2800, category: 'main' },
+  // Principales (3)
+  { id: 'principal1', name: 'Lomo de ternera grillado ', description: 'Corte de lomo cocinado al horno con hierbas', price: 3500, category: 'principal' },
+  { id: 'principal2', name: 'Bondiola de cerdo', description: 'Risotto cremoso con hongos de estación', price: 3200, category: 'principal' },
+  { id: 'principal3', name: 'Pollo relleno don mozarella y jamon cocido', description: 'Suprema grillada con salsa de mostaza', price: 3100, category: 'principal' },
 
-  // Postres
-  { id: 'd1', name: 'Mini tortas', description: 'Variedad de mini tortas de chocolate, frutilla y vainilla', price: 1500, category: 'dessert' },
-  { id: 'd2', name: 'Frutas de estación', description: 'Selección de frutas frescas de temporada', price: 1200, category: 'dessert' },
-
-  // Bebidas
-  { id: 'dr1', name: 'Barra de bebidas', description: 'Incluye agua, gaseosas, vino y cerveza', price: 2000, category: 'drink' },
-  { id: 'dr2', name: 'Servicio de café', description: 'Café, té y petit fours', price: 800, category: 'drink' },
-  { id: 'dr3', name: 'Tragos para adultos', description: 'Cócteles clásicos y de autor (adicional)', price: 1500, category: 'drink' },
-  { id: 'dr4', name: 'Licuados sin alcohol', description: 'Licuados de frutas frescas (adicional)', price: 1000, category: 'drink' },
-
-  // Adicionales
-  { id: 'ad1', name: 'Panchos', description: 'Hot dogs estilo gourmet - mínimo 50 unidades', price: 400, category: 'additional' },
-  { id: 'ad2', name: 'Hamburguesas', description: 'Hamburguesas premium - mínimo 50 unidades', price: 700, category: 'additional' },
-  { id: 'ad3', name: 'Choripanes', description: 'Clásicos choripanes - mínimo 50 unidades', price: 500, category: 'additional' },
+  // Postres (8)
+  { id: 'postre1', name: 'Brownie', description: 'Brownie con dulce de leche, merengue y frutilla', price: 1500, category: 'postre' },
+  { id: 'postre2', name: 'Cheesecake', description: 'Cheese cake de frutos rojos', price: 1300, category: 'postre' },
+  { id: 'postre3', name: 'Tiramisú', description: 'Clásico postre italiano con café y mascarpone', price: 1700, category: 'postre' },
+  { id: 'postre4', name: 'Chocotorta', description: 'Clásica chocotorta', price: 1600, category: 'postre' },
+  { id: 'postre5', name: 'Flan', description: 'Flan casero con dulce de leche', price: 1600, category: 'postre' },
+  { id: 'postre6', name:  'Helado', description: 'Helado de chocolate y limon cocado relleno de dulce de leche, con base de choclate ', price: 1500, category: 'postre' },
+  { id: 'postre7', name: 'Torta Oreo', description: 'Clásica torta hecha con la famosa galñleta oreo', price: 1800, category: 'postre' },
+  { id: 'postre8', name: 'Helado artesanal', description: 'Variedad de sabores de helado casero', price: 1400, category: 'postre' }
 ];
-
-const TOTAL_STEPS = 5;
 
 const Catering: React.FC = () => {
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
-  const [currentStep, setCurrentStep] = useState(1);
+  const [currentStep, setCurrentStep] = useState(0);
   const [showSummary, setShowSummary] = useState(false);
-
-  const toggleOption = (id: string) => {
-    setSelectedOptions(prev =>
-      prev.includes(id)
-        ? prev.filter(item => item !== id)
-        : [...prev, id]
-    );
-  };
+  const [selectedMenu, setSelectedMenu] = useState<MenuOption | null>(null);
 
   const totalPrice = selectedOptions.reduce((sum, id) => {
     const option = cateringOptions.find(opt => opt.id === id);
-    return sum + (option?.price || 0);
+    return option ? sum + option.price : sum;
   }, 0);
 
-  const nextStep = () => {
-    if (currentStep < TOTAL_STEPS) {
-      setCurrentStep(prev => prev + 1);
-    } else {
+  const nextStep = () => setCurrentStep(prev => prev + 1);
+
+  const selectMenu = (menu: MenuOption) => {
+    setSelectedMenu(menu);
+    setSelectedOptions([]);
+    if (!menu.allowCustomization) {
       setShowSummary(true);
+    } else {
+      setCurrentStep(1);
     }
   };
 
-  const prevStep = () => {
-    setShowSummary(false);
-    setCurrentStep(prev => Math.max(prev - 1, 1));
-  };
-
-  const StepIndicator: React.FC = () => (
-    <ol className="flex items-center w-full">
-      {['Entrada', 'Principal', 'Postre', 'Bebidas', 'Adicionales'].map((label, index) => {
-        const stepNumber = index + 1;
-        const isActive = currentStep >= stepNumber;
-        return (
-          <React.Fragment key={label}>
-            <li className={`flex items-center ${isActive ? 'text-[#FF6B35]' : 'text-gray-500'}`}>
-              <span className={`flex items-center justify-center w-8 h-8 rounded-full ${isActive ? 'bg-[#FF6B35] text-white' : 'bg-gray-200'}`}>{stepNumber}</span>
-              <span className="ml-2 text-sm whitespace-nowrap">{label}</span>
-            </li>
-            {stepNumber < TOTAL_STEPS && <span className="w-full h-1 mx-4 bg-gray-200"></span>}
-          </React.Fragment>
-        );
-      })}
-    </ol>
-  );
-
-  if (showSummary) {
+  if (showSummary && selectedMenu) {
     return (
       <div className="container mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold text-gray-800 mb-6 text-center">Resumen de Catering</h1>
         <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-semibold mb-4">Tu selección</h2>
-          <div className="mb-6 space-y-3">
-            {selectedOptions.map(id => {
-              const option = cateringOptions.find(opt => opt.id === id);
-              return option ? (
-                <div key={id} className="border-b pb-2">
-                  <h3 className="font-medium">{option.name}</h3>
-                  <p className="text-sm text-gray-600">{option.description}</p>
-                </div>
-              ) : null;
-            })}
+          <div className="mb-6">
+            <h2 className="text-xl font-semibold mb-2">Menú seleccionado</h2>
+            <div className="border-b pb-4">
+              <h3 className="font-medium">{selectedMenu.name}</h3>
+              <p className="text-sm text-gray-600">{selectedMenu.description}</p>
+              <div className="mt-2">
+                <h4 className="font-medium text-sm">Incluye:</h4>
+                <ul className="text-sm text-gray-600 mt-1 space-y-1">
+                  {selectedMenu.includes.map((item, index) => (
+                    <li key={index} className="flex items-start">
+                      <Check className="w-4 h-4 text-[#FF6B35] mr-2 mt-0.5 flex-shrink-0" />
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <p className="text-[#FF6B35] font-medium mt-2">${selectedMenu.price.toLocaleString()}</p>
+            </div>
           </div>
+
+          {selectedMenu.allowCustomization && selectedOptions.length > 0 && (
+            <>
+              <h2 className="text-xl font-semibold mb-4">Tu selección adicional</h2>
+              <div className="mb-6 space-y-3">
+                {selectedOptions.map(id => {
+                  const option = cateringOptions.find(opt => opt.id === id);
+                  return option ? (
+                    <div key={id} className="border-b pb-2">
+                      <h3 className="font-medium">{option.name}</h3>
+                      <p className="text-sm text-gray-600">{option.description}</p>
+                    </div>
+                  ) : null;
+                })}
+              </div>
+            </>
+          )}
+
           <div className="border-t pt-4 text-xl font-bold text-[#FF6B35] text-right">
-            Total: ${totalPrice.toLocaleString()}
+            Total: ${(
+              selectedMenu.price + 
+              (selectedMenu.allowCustomization ? totalPrice : 0)
+            ).toLocaleString()}
           </div>
+
           <button
-            onClick={() => setShowSummary(false)}
+            onClick={() => {
+              setShowSummary(false);
+              if (!selectedMenu.allowCustomization) {
+                setCurrentStep(0);
+              }
+            }}
             className="mt-6 px-4 py-2 rounded-md bg-[#FF6B35] text-white hover:bg-[#FF6B35]/90"
           >
             Volver a editar
@@ -118,126 +192,124 @@ const Catering: React.FC = () => {
     );
   }
 
-  return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold text-gray-800 mb-6 text-center">Selección de Catering</h1>
-
-      <div className="max-w-4xl mx-auto">
-        {/* Step indicator */}
-        <div className="mb-8">
-          <StepIndicator />
-        </div>
-
-        {/* Step content */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          {currentStep === 1 && (
-            <div>
-              <h2 className="text-xl font-semibold mb-4">Selecciona las entradas</h2>
-              <div className="space-y-3">
-                {cateringOptions.filter(opt => opt.category === 'appetizer').map(option => (
-                  <OptionCard key={option.id} option={option} selected={selectedOptions.includes(option.id)} onToggle={toggleOption} hidePrice />
-                ))}
+  if (currentStep === 0) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold text-gray-800 mb-6 text-center">Selecciona tu menú</h1>
+        <div className="max-w-4xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            {menuOptions.map(menu => (
+              <div 
+                key={menu.id}
+                className={`border rounded-lg p-6 cursor-pointer transition-all ${
+                  selectedMenu?.id === menu.id ? 'border-[#FF6B35] bg-[#FF6B35]/5' : 'border-gray-200 hover:border-gray-300'
+                }`}
+                onClick={() => selectMenu(menu)}
+              >
+                <h2 className="text-xl font-bold text-[#FF6B35] mb-2">{menu.name}</h2>
+                <p className="text-gray-600 mb-4">{menu.description}</p>
+                <div className="mb-4">
+                  <h3 className="font-medium mb-2">Incluye:</h3>
+                  <ul className="text-sm text-gray-600 space-y-1">
+                    {menu.includes.map((item, index) => (
+                      <li key={index} className="flex items-start">
+                        <Check className="w-4 h-4 text-[#FF6B35] mr-2 mt-0.5 flex-shrink-0" />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                {!menu.allowCustomization && (
+                  <div className="mt-2 text-sm text-gray-500 italic">
+                    Este menú no permite personalización adicional
+                  </div>
+                )}
+                <div className="text-xl font-bold text-right text-[#FF6B35]">
+                  ${menu.price.toLocaleString()}
+                </div>
               </div>
-            </div>
-          )}
+            ))}
+          </div>
 
-          {currentStep === 2 && (
-            <div>
-              <h2 className="text-xl font-semibold mb-4">Selecciona los platos principales</h2>
-              <div className="space-y-3">
-                {cateringOptions.filter(opt => opt.category === 'main').map(option => (
-                  <OptionCard key={option.id} option={option} selected={selectedOptions.includes(option.id)} onToggle={toggleOption} hidePrice />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {currentStep === 3 && (
-            <div>
-              <h2 className="text-xl font-semibold mb-4">Selecciona los postres</h2>
-              <div className="space-y-3">
-                {cateringOptions.filter(opt => opt.category === 'dessert').map(option => (
-                  <OptionCard key={option.id} option={option} selected={selectedOptions.includes(option.id)} onToggle={toggleOption} hidePrice />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {currentStep === 4 && (
-            <div>
-              <h2 className="text-xl font-semibold mb-2">Selecciona las bebidas</h2>
-              <p className="text-sm text-gray-500 mb-4 italic">Cada trago/licuado adicional se cobra por persona.</p>
-              <div className="space-y-3">
-                {cateringOptions.filter(opt => opt.category === 'drink').map(option => (
-                  <OptionCard key={option.id} option={option} selected={selectedOptions.includes(option.id)} onToggle={toggleOption} hidePrice />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {currentStep === 5 && (
-            <div>
-              <h2 className="text-xl font-semibold mb-2">Selecciona adicionales</h2>
-              <p className="text-sm text-gray-500 mb-4 italic">Cada comida adicional se cobra por cantidad.</p>
-              <div className="space-y-3">
-                {cateringOptions.filter(opt => opt.category === 'additional').map(option => (
-                  <OptionCard key={option.id} option={option} selected={selectedOptions.includes(option.id)} onToggle={toggleOption} hidePrice />
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Navigation buttons */}
-        <div className="flex justify-between">
-          <button
-            onClick={prevStep}
-            className={`px-4 py-2 rounded-md border border-gray-300 ${currentStep === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50'}`}
-            disabled={currentStep === 1}
-          >
-            Anterior
-          </button>
-
-          <button
-            onClick={nextStep}
-            className="px-4 py-2 rounded-md bg-[#FF6B35] text-white hover:bg-[#FF6B35]/90 flex items-center"
-          >
-            {currentStep < TOTAL_STEPS ? 'Siguiente' : 'Ver resumen'}
-            <ChevronRight className="w-4 h-4 ml-1" />
-          </button>
+          <div className="flex justify-end">
+            <button
+              onClick={() => selectedMenu && selectedMenu.allowCustomization && nextStep()}
+              className={`px-4 py-2 rounded-md bg-[#FF6B35] text-white hover:bg-[#FF6B35]/90 flex items-center ${
+                !selectedMenu || !selectedMenu.allowCustomization ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
+              disabled={!selectedMenu || !selectedMenu.allowCustomization}
+            >
+              Personalizar menú
+              <ChevronRight className="w-4 h-4 ml-1" />
+            </button>
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  }
+
+  if (currentStep === 1 && selectedMenu) {
+    const groupedOptions = {
+      entrada: cateringOptions.filter(opt => opt.category === 'entrada'),
+      principal: cateringOptions.filter(opt => opt.category === 'principal'),
+      postre: cateringOptions.filter(opt => opt.category === 'postre')
+    };
+
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold text-gray-800 mb-6 text-center">Personaliza tu menú</h1>
+        <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-md p-6 space-y-6">
+          {(['entrada', 'principal', 'postre'] as const).map(category => (
+            <div key={category}>
+              <h2 className="text-2xl font-semibold text-gray-700 mb-4 capitalize">{category}</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {groupedOptions[category].map(option => {
+                  const isSelected = selectedOptions.includes(option.id);
+                  return (
+                    <div
+                      key={option.id}
+                      onClick={() => {
+                        setSelectedOptions(prev =>
+                          isSelected
+                            ? prev.filter(id => id !== option.id)
+                            : [...prev, option.id]
+                        );
+                      }}
+                      className={`border rounded-lg p-4 cursor-pointer transition ${
+                        isSelected ? 'border-[#FF6B35] bg-[#FF6B35]/10' : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <h3 className="text-lg font-semibold text-[#FF6B35]">{option.name}</h3>
+                      <p className="text-sm text-gray-600">{option.description}</p>
+                      <p className="text-right font-bold text-[#FF6B35]">${option.price.toLocaleString()}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+
+          <div className="flex justify-between mt-6">
+            <button
+              onClick={() => setCurrentStep(0)}
+              className="px-4 py-2 rounded-md bg-gray-300 text-gray-800 hover:bg-gray-400"
+            >
+              Volver
+            </button>
+            <button
+              onClick={() => setShowSummary(true)}
+              className="px-4 py-2 rounded-md bg-[#FF6B35] text-white hover:bg-[#FF6B35]/90"
+            >
+              Ver resumen
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
+
+  return null;
 };
-
-interface OptionCardProps {
-  option: CateringOption;
-  selected: boolean;
-  onToggle: (id: string) => void;
-  hidePrice?: boolean;
-}
-
-const OptionCard: React.FC<OptionCardProps> = ({ option, selected, onToggle, hidePrice = false }) => (
-  <div
-    className={`border rounded-lg p-4 cursor-pointer transition-all ${selected ? 'border-[#FF6B35] bg-[#FF6B35]/5' : 'border-gray-200 hover:border-gray-300'}`}
-    onClick={() => onToggle(option.id)}
-  >
-    <div className="flex items-start">
-      <div className={`w-5 h-5 rounded-full border flex-shrink-0 flex items-center justify-center ${selected ? 'bg-[#FF6B35] border-[#FF6B35]' : 'border-gray-300'}`}>
-        {selected && <Check className="w-3 h-3 text-white" />}
-      </div>
-      <div className="ml-3 flex-grow">
-        <h3 className="font-medium">{option.name}</h3>
-        <p className="text-sm text-gray-600">{option.description}</p>
-      </div>
-      {!hidePrice && (
-        <div className="ml-2 text-[#FF6B35] font-medium">
-          ${option.price}
-        </div>
-      )}
-    </div>
-  </div>
-);
 
 export default Catering;

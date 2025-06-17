@@ -4,15 +4,40 @@ export interface Position {
   y: number;
 }
 
-export type Table = {
+export interface Guest {
   id: string;
-  position: { x: number; y: number };
+  name: string;
+  tableId?: string;
+  // otros campos relevantes
+}
+
+export interface TableclothOption {
+  id: string;
+  name: string;
+  mainColor: string;
+  secondaryColor?: string;
+  napkins: {
+    availableColors: string[];
+    defaultColor: string;
+  };
+  image: string;
+  isTwoTone?: boolean;
+}
+
+export interface Table {
+  id: string;
+  position: Position;
   shape: 'circle' | 'square' | 'rectangle';
   width: number;
   height: number;
   isAssignable: boolean;
-  guests: string[];
+  guests: string[]; // IDs de los invitados
   isUsed: boolean;
-  tableclothColor?: string;
+  tablecloth?: string;
+  napkinColor?: string;
   centerpiece?: string;
-};
+  tableName?: string;
+  numAdults?: number;
+  numChildren?: number;
+  details?: string;
+}

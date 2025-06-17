@@ -1,10 +1,19 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
-import { Home, Utensils, LayoutGrid, HelpCircle } from 'lucide-react';
-import { Users } from 'lucide-react';
+import { NavLink, useSearchParams } from 'react-router-dom';
+import { Home, Utensils, LayoutGrid, Users } from 'lucide-react';
 
+const eventosConInvitados = ['fiesta15']; // Eventos que muestran Invitados
 
 const Header: React.FC = () => {
+  const [searchParams] = useSearchParams();
+  const tipoEvento = searchParams.get('tipo') || '';
+
+  const mostrarInvitados = eventosConInvitados.includes(tipoEvento);
+
+  // Link para invitados: si es fiesta15 va a la página eventos con ese tipo
+  // sino, va a home (o podrías ocultar el menú si no querés que se vea)
+  const linkInvitados = mostrarInvitados ? `/eventos?tipo=${tipoEvento}` : '/';
+
   return (
     <header className="bg-[#FF6B35] text-white shadow-md">
       <div className="container mx-auto px-4 py-3">
@@ -27,7 +36,9 @@ const Header: React.FC = () => {
                 <NavLink
                   to="/"
                   className={({ isActive }) =>
-                    `flex flex-col items-center text-white/90 hover:text-white transition-colors ${isActive ? 'text-white font-medium' : ''}`
+                    `flex flex-col items-center text-white/90 hover:text-white transition-colors ${
+                      isActive ? 'text-white font-medium' : ''
+                    }`
                   }
                 >
                   <Home className="h-5 w-5" />
@@ -38,7 +49,9 @@ const Header: React.FC = () => {
                 <NavLink
                   to="/catering"
                   className={({ isActive }) =>
-                    `flex flex-col items-center text-white/90 hover:text-white transition-colors ${isActive ? 'text-white font-medium' : ''}`
+                    `flex flex-col items-center text-white/90 hover:text-white transition-colors ${
+                      isActive ? 'text-white font-medium' : ''
+                    }`
                   }
                 >
                   <Utensils className="h-5 w-5" />
@@ -49,7 +62,9 @@ const Header: React.FC = () => {
                 <NavLink
                   to="/mesas"
                   className={({ isActive }) =>
-                    `flex flex-col items-center text-white/90 hover:text-white transition-colors ${isActive ? 'text-white font-medium' : ''}`
+                    `flex flex-col items-center text-white/90 hover:text-white transition-colors ${
+                      isActive ? 'text-white font-medium' : ''
+                    }`
                   }
                 >
                   <LayoutGrid className="h-5 w-5" />
@@ -60,37 +75,31 @@ const Header: React.FC = () => {
                 <NavLink
                   to="/eventos"
                   className={({ isActive }) =>
-                    `flex flex-col items-center text-white/90 hover:text-white transition-colors ${isActive ? 'text-white font-medium' : ''}`
+                    `flex flex-col items-center text-white/90 hover:text-white transition-colors ${
+                      isActive ? 'text-white font-medium' : ''
+                    }`
                   }
                 >
                   <span className="h-5 w-5 flex items-center justify-center">📅</span>
                   <span className="text-xs mt-1">Organizador de horarios</span>
                 </NavLink>
               </li>
-              <li>
-                <NavLink
-                  to="/faqs"
-                  className={({ isActive }) =>
-                    `flex flex-col items-center text-white/90 hover:text-white transition-colors ${isActive ? 'text-white font-medium' : ''}`
-                  }
-                >
-                  <HelpCircle className="h-5 w-5" />
-                  <span className="text-xs mt-1">FAQs</span>
-                </NavLink>
-              </li>
-              <li>
-                <NavLink
-                  to="/invitados"
-                  className={({ isActive }) =>
-                    `flex flex-col items-center text-white/90 hover:text-white transition-colors ${isActive ? 'text-white font-medium' : ''}`
-                  }
-                >
-                  <Users className="h-5 w-5" />
-                  <span className="text-xs mt-1">Invitados</span>
-                </NavLink>
-              </li>
 
-
+              {mostrarInvitados && (
+                <li>
+                  <NavLink
+                    to={linkInvitados}
+                    className={({ isActive }) =>
+                      `flex flex-col items-center text-white/90 hover:text-white transition-colors ${
+                        isActive ? 'text-white font-medium' : ''
+                      }`
+                    }
+                  >
+                    <Users className="h-5 w-5" />
+                    <span className="text-xs mt-1">Invitados</span>
+                  </NavLink>
+                </li>
+              )}
             </ul>
           </nav>
         </div>
