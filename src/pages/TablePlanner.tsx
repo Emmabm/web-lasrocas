@@ -1,4 +1,3 @@
-// src/pages/TablePlanner.tsx
 import React, { useState } from 'react';
 import { AlertCircle, Save, ChevronRight, Check } from 'lucide-react';
 import FloorPlan from '../components/FloorPlan';
@@ -304,31 +303,34 @@ const TablePlanner: React.FC = () => {
               {/* Solo mostrar selección de servilletas si el mantel no es two-tone */}
               {!tableclothOptions.find(t => t.id === globalDecoration.tablecloth)?.isTwoTone ? (
                 <>
-                  <h4 className="text-sm font-medium mb-2">Color de servilletas</h4>
-                  <div className="flex gap-3">
-                    {tableclothOptions
-                      .find(t => t.id === globalDecoration.tablecloth)!
-                      .napkins.availableColors.map(color => (
-                        <button
-                          key={color}
-                          className={`w-10 h-10 rounded-full border-2 cursor-pointer ${
-                            globalDecoration.napkinColor === color ? 'border-[#FF6B35]' : 'border-gray-200'
-                          }`}
-                          style={{ 
-                            backgroundColor: color === 'black' ? '#000' : '#FFF',
-                            borderColor: color === 'black' ? '#000' : '#DDD'
-                          }}
-                          onClick={() => updateGlobalDecoration(
-                            globalDecoration.tablecloth, 
-                            color,
-                            globalDecoration.centerpiece
-                          )}
-                          title={color === 'black' ? 'Negras' : 'Blancas'}
-                        />
-                    ))}
-                  </div>
-                </>
-              ) : (
+               <h4 className="text-sm font-medium mb-2">Color de servilletas</h4>
+    <div className="flex gap-3">
+      {tableclothOptions
+        .find(t => t.id === globalDecoration.tablecloth)!
+        .napkins.availableColors.map(color => (
+          <button
+            key={color}
+            className={`w-10 h-10 rounded-full border-2 cursor-pointer ${
+              globalDecoration.napkinColor === color 
+                ? 'border-[#FF6B35]' 
+                : color === 'black' 
+                  ? 'border-gray-800' 
+                  : 'border-gray-300'
+            }`}
+            style={{ 
+              backgroundColor: color === 'black' ? '#000' : '#FFF'
+            }}
+            onClick={() => updateGlobalDecoration(
+              globalDecoration.tablecloth, 
+              color,
+              globalDecoration.centerpiece
+            )}
+            title={color === 'black' ? 'Negras' : 'Blancas'}
+          />
+      ))}
+    </div>
+   </>
+) : (
                 <div className="bg-gray-50 p-3 rounded-md">
                   <p className="text-sm text-gray-600">
                     Este mantel incluye servilletas blancas en la parte negra y negras en la parte blanca.
