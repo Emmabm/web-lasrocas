@@ -1,74 +1,185 @@
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  useLocation,
-  Navigate,
-} from 'react-router-dom';
-
-import Home from './pages/Home';
+import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom';
+import { UserProvider } from './hooks/useUserContext';
+import Home from './pages/cliente/Home';
 import Header from './components/Header';
-import TablePlanner from './pages/TablePlanner';
-import Catering, {
-  DishSelection,
-  SideSelection,
-  ExtraSelection,
-} from './pages/Catering';
-import Guests from './pages/Guests';
-import EventSchedule from './pages/EventSchedule';
+import TablePlanner from './pages/cliente/mesa/TablePlanner';
+import EventSchedule from './pages/cliente/horarios/EventSchedule';
 import AdminPanel from './pages/admin/AdminPanel';
 import Login from './pages/auth/Login';
+import GuestsWrapper from './pages/cliente/invitados/GuestsWrapper';
 import EventoPage from './pages/evento/[token]';
 import RequireAuth from './components/RequireAuth';
+import ThankYou from './pages/cliente/gracias/ThankYou';
+// Catering
+import Catering from './pages/cliente/catering/Catering';
+import ReceptionSelectionMenu1 from './pages/cliente/catering/menu1/ReceptionSelectionMenu1';
+import MainCourseSelectionMenu1 from './pages/cliente/catering/menu1/MainCourseSelectionMenu1';
+import DessertSelectionMenu1 from './pages/cliente/catering/menu1/DessertSelectionMenu1';
+import KidsMenuSelectionMenu1 from './pages/cliente/catering/menu1/KidsMenuSelectionMenu1';
+import ReceptionSelectionMenu2 from './pages/cliente/catering/menu2/ReceptionSelectionMenu2';
+import MainCourseSelectionMenu2 from './pages/cliente/catering/menu2/MainCourseSelectionMenu2';
+import DessertSelectionMenu2 from './pages/cliente/catering/menu2/DessertSelectionMenu2';
+import KidsMenuSelectionMenu2 from './pages/cliente/catering/menu2/KidsMenuSelectionMenu2';
+import ReceptionSelectionMenu3 from './pages/cliente/catering/menu3/ReceptionSelectionMenu3';
+import MainCourseSelectionMenu3 from './pages/cliente/catering/menu3/MainCourseSelectionMenu3';
+import DessertSelectionMenu3 from './pages/cliente/catering/menu3/DessertSelectionMenu3';
+import KidsMenuSelectionMenu3 from './pages/cliente/catering/menu3/KidsMenuSelectionMenu3';
+import ReceptionSelectionMenu4 from './pages/cliente/catering/menu4/ReceptionSelectionMenu4';
+import LunchSelectionMenu4 from './pages/cliente/catering/menu4/LunchSelectionMenu4';
+import DessertSelectionMenu4 from './pages/cliente/catering/menu4/DessertSelectionMenu4';
+import DrinksSelection from './pages/cliente/catering/DrinksSelection';
+import DanceFoodSelection from './pages/cliente/catering/DanceFoodSelection';
+import CateringSummary from './pages/cliente/catering/CateringSummary';
+// Organizador
+import OrganizadorPanel from './pages/organizador/OrganizadorPanel';
+import OrganizadorPanelWrapper from './pages/layouts/OrganizadorPanelWrapper';
+import CateringResumenOrganizador from './pages/organizador/CateringResumenOrganizador';
+import MesasResumenOrganizador from './pages/organizador/MesasResumenOrganizador';
+import HorariosResumenOrganizador from './pages/organizador/HorariosResumenOrganizador';
+import InvitadosResumenOrganizador from './pages/organizador/InvitadosResumenOrganizador';
+
+function App() {
+  return (
+    <UserProvider>
+      <Router>
+        <AppRoutes />
+      </Router>
+    </UserProvider>
+  );
+}
 
 function AppRoutes() {
   const location = useLocation();
-  const hideHeader = location.pathname === '/';
+  // Ocultar header y footer en /auth y todas las rutas de organizador
+  const hideHeaderFooter = location.pathname.startsWith('/auth') || location.pathname.startsWith('/organizador');
 
   return (
     <>
-      <Header />
+      {!hideHeaderFooter && <Header />}
       <div className="min-h-screen bg-gray-50 flex flex-col">
         <main className="flex-1">
           <Routes>
+            {/* Accesible para todos */}
             <Route path="/" element={<Home />} />
-            <Route path="/mesas" element={<TablePlanner />} />
-            <Route path="/catering" element={<Catering />} />
-            <Route path="/catering/:menuId/platos" element={<DishSelection />} />
-            <Route path="/catering/:menuId/acompanamientos" element={<SideSelection />} />
-            <Route path="/catering/:menuId/extras" element={<ExtraSelection />} />
-            <Route path="/invitados" element={<Guests />} />
-            <Route path="/eventos" element={<EventSchedule />} />
-            <Route path="/admin" element={<AdminPanel />} />
+            <Route path="/cliente" element={<Home />} />
             <Route path="/auth" element={<Login />} />
             <Route path="/evento/:token" element={<EventoPage />} />
-            <Route path="/admin"element={
-    <RequireAuth>
-      <AdminPanel />
-    </RequireAuth>
-  }
-/>
+            <Route path="/thank-you" element={<ThankYou />} />
 
-            {/* Catch-all: redirige rutas desconocidas al home */}
+            {/* Rutas generales */}
+            <Route path="/mesa" element={<TablePlanner />} />
+            <Route path="/invitados" element={<GuestsWrapper />} />
+            <Route path="/horarios" element={<EventSchedule />} />
+
+            {/* Rutas protegidas por rol */}
+            <Route
+              path="/admin"
+              element={
+                <RequireAuth allowedRoles={['admin']}>
+                  <AdminPanel />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/organizador/panel"
+              element={
+                <RequireAuth allowedRoles={['organizador']}>
+                  <OrganizadorPanelWrapper>
+                    <OrganizadorPanel />
+                  </OrganizadorPanelWrapper>
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/organizador/evento/:id/catering"
+              element={
+                <RequireAuth allowedRoles={['organizador']}>
+                  <OrganizadorPanelWrapper>
+                    <CateringResumenOrganizador />
+                  </OrganizadorPanelWrapper>
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/organizador/evento/:id/mesas"
+              element={
+                <RequireAuth allowedRoles={['organizador']}>
+                  <OrganizadorPanelWrapper>
+                    <MesasResumenOrganizador />
+                  </OrganizadorPanelWrapper>
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/organizador/evento/:id/horarios"
+              element={
+                <RequireAuth allowedRoles={['organizador']}>
+                  <OrganizadorPanelWrapper>
+                    <HorariosResumenOrganizador />
+                  </OrganizadorPanelWrapper>
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/organizador/evento/:id/invitados"
+              element={
+                <RequireAuth allowedRoles={['organizador']}>
+                  <OrganizadorPanelWrapper>
+                    <InvitadosResumenOrganizador />
+                  </OrganizadorPanelWrapper>
+                </RequireAuth>
+              }
+            />
+
+            {/* Rutas de catering */}
+            <Route path="/catering" element={<Catering />} />
+            <Route path="/catering/menu1/recepcion" element={<ReceptionSelectionMenu1 />} />
+            <Route path="/catering/menu1/main" element={<MainCourseSelectionMenu1 />} />
+            <Route path="/catering/menu1/postre" element={<DessertSelectionMenu1 />} />
+            <Route path="/catering/menu1/kids" element={<KidsMenuSelectionMenu1 />} />
+            <Route path="/catering/menu1/bebidas" element={<DrinksSelection />} />
+            <Route path="/catering/menu1/comidas-baile" element={<DanceFoodSelection />} />
+            <Route path="/catering/menu1/resumen" element={<CateringSummary />} />
+            <Route path="/catering/menu2/recepcion" element={<ReceptionSelectionMenu2 />} />
+            <Route path="/catering/menu2/main" element={<MainCourseSelectionMenu2 />} />
+            <Route path="/catering/menu2/postre" element={<DessertSelectionMenu2 />} />
+            <Route path="/catering/menu2/kids" element={<KidsMenuSelectionMenu2 />} />
+            <Route path="/catering/menu2/bebidas" element={<DrinksSelection />} />
+            <Route path="/catering/menu2/comidas-baile" element={<DanceFoodSelection />} />
+            <Route path="/catering/menu2/resumen" element={<CateringSummary />} />
+            <Route path="/catering/menu3/recepcion" element={<ReceptionSelectionMenu3 />} />
+            <Route path="/catering/menu3/main" element={<MainCourseSelectionMenu3 />} />
+            <Route path="/catering/menu3/postre" element={<DessertSelectionMenu3 />} />
+            <Route path="/catering/menu3/kids" element={<KidsMenuSelectionMenu3 />} />
+            <Route path="/catering/menu3/bebidas" element={<DrinksSelection />} />
+            <Route path="/catering/menu3/comidas-baile" element={<DanceFoodSelection />} />
+            <Route path="/catering/menu3/resumen" element={<CateringSummary />} />
+            <Route path="/catering/menu4/recepcion" element={<ReceptionSelectionMenu4 />} />
+            <Route path="/catering/menu4/lunch" element={<LunchSelectionMenu4 />} />
+            <Route path="/catering/menu4/postre" element={<DessertSelectionMenu4 />} />
+            <Route path="/catering/menu4/bebidas" element={<DrinksSelection />} />
+            <Route path="/catering/menu4/comidas-baile" element={<DanceFoodSelection />} />
+            <Route path="/catering/menu4/resumen" element={<CateringSummary />} />
+
+            {/* Ruta catch-all */}
+            <Route
+              path="/organizador/*"
+              element={
+                <RequireAuth allowedRoles={['organizador']}>
+                  <Navigate to="/organizador/panel" replace />
+                </RequireAuth>
+              }
+            />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>
-
-        {!hideHeader && (
+        {!hideHeaderFooter && (
           <footer className="bg-gray-100 p-4 text-center text-gray-600 text-sm">
             © 2025 Las Rocas - Todos los derechos reservados
           </footer>
         )}
       </div>
     </>
-  );
-}
-
-function App() {
-  return (
-    <Router>
-      <AppRoutes />
-    </Router>
   );
 }
 

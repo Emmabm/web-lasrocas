@@ -1,88 +1,77 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Table } from '../types/types';
 
-const FloorPlan: React.FC<{
+interface FloorPlanProps {
   tables: Table[];
-  onTableMove: (id: string, pos: { x: number; y: number }) => void;
+  onTableMove?: (id: string, pos: { x: number; y: number }) => void; // Opcional, para mover mesas
   onTableSelect: (id: string) => void;
   tableWarnings: string[];
-  tableGuests: Record<string, number>; // Nuevo prop para el número de invitados por mesa
-  tableCapacity: number; // Capacidad máxima de cada mesa
-}> = ({ tables, onTableMove, onTableSelect, tableWarnings, tableGuests, tableCapacity }) => {
-  const [dragId, setDragId] = useState<string | null>(null);
-  const [offset, setOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  tableGuests: Record<string, number>;
+  tableCapacity: number;
+}
 
-  const onDown = (e: React.MouseEvent, t: Table) => {
-    if (!t.isAssignable) return;
-    setDragId(t.id);
-    setOffset({ x: e.clientX - t.position.x, y: e.clientY - t.position.y });
-  };
-
-  const onMove = (e: React.MouseEvent) => {
-    if (dragId) {
-      onTableMove(dragId, {
-        x: e.clientX - offset.x,
-        y: e.clientY - offset.y,
-      });
-    }
-  };
-
-  const onUp = () => setDragId(null);
-
+const FloorPlan: React.FC<FloorPlanProps> = ({
+  tables,
+  onTableSelect,
+  tableWarnings,
+  tableGuests,
+  tableCapacity
+}) => {
   return (
-    <div className="relative w-full h-[650px]" onMouseMove={onMove} onMouseUp={onUp}>
+    <div
+      className="relative w-full bg-white rounded-lg border border-gray-400 p-4 shadow-sm"
+      style={{ height: 580 }}
+    >
       {tables.map(t => {
         const guests = tableGuests[t.id] || 0;
-        const isFull = guests >= tableCapacity;
-        
-        const style: React.CSSProperties = {
-          left: t.position.x - (t.width ?? 0) / 2,
-          top: t.position.y - (t.height ?? 0) / 2,
+        const isUsed = t.isUsed;
+
+        const left = isFinite(t.position?.x) && isFinite(t.width)
+          ? t.position.x - (t.width || 0) / 2
+          : 0;
+
+        const top = isFinite(t.position?.y) && isFinite(t.height)
+          ? t.position.y - (t.height || 0) / 2
+          : 0;
+
+        const baseStyle: React.CSSProperties = {
+          left,
+          top,
           width: t.width,
           height: t.height,
           position: 'absolute',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          cursor: t.isAssignable ? 'move' : 'default',
-          zIndex: dragId === t.id ? 10 : undefined,
         };
 
-        if (t.shape === 'circle') {
+        if (t.isAssignable) {
           return (
             <div
               key={t.id}
               style={{
-                ...style,
-                borderRadius: '50%',
-                backgroundColor: isFull ? '#FF6B35' : '#F3F4F6',
+                ...baseStyle,
+                borderRadius: t.shape === 'circle' ? '50%' : '4px',
+                backgroundColor: isUsed ? '#FF6B35' : '#F3F4F6',
                 border: tableWarnings.includes(t.id)
                   ? '3px solid #EF4444'
-                  : isFull 
+                  : isUsed
                     ? '2px solid #FF6B35'
                     : '1px solid #9CA3AF',
-                boxShadow: isFull ? '0 2px 4px rgba(0,0,0,0.1)' : 'none',
-                transition: dragId === t.id ? 'none' : 'all 0.2s ease',
+                cursor: 'pointer',
+                boxShadow: isUsed ? '0 2px 4px rgba(0,0,0,0.1)' : 'none',
+                transition: 'all 0.2s ease',
               }}
-              onMouseDown={(e) => onDown(e, t)}
-              onClick={() => t.isAssignable && onTableSelect(t.id)}
-              title={`Mesa ${t.id} - ${isFull ? 'Completada' : 'Disponible'} (${guests}/${tableCapacity})`}
+              onClick={() => onTableSelect(t.id)}
+              title={`Mesa ${t.tableName || t.id} - ${guests}/${tableCapacity}`}
             >
-              <span
-                className={
-                  isFull 
-                    ? 'text-white font-medium text-sm' 
-                    : 'text-gray-600 font-medium text-sm'
-                }
-              >
-                {t.id}
+              <span className={isUsed ? 'text-white text-sm font-semibold' : 'text-gray-700 text-sm font-semibold'}>
+                {t.tableName || t.id}
               </span>
-              {/* Mostrar número de invitados si hay alguno */}
+
               {guests > 0 && (
-                <span 
-                  className={`absolute bottom-0 text-xs font-bold ${
-                    isFull ? 'text-white' : 'text-gray-600'
-                  }`}
+                <span
+                  className={`absolute bottom-0 text-xs font-bold ${isUsed ? 'text-white' : 'text-gray-600'}`}
                   style={{ transform: 'translateY(100%)' }}
                 >
                   {guests}/{tableCapacity}
@@ -92,19 +81,21 @@ const FloorPlan: React.FC<{
           );
         }
 
+        // Mesas no asignables (solo muestra de referencia)
         return (
           <div
             key={t.id}
             style={{
-              ...style,
-              backgroundColor: '#D1D5DB',
-              borderRadius: 4,
+              ...baseStyle,
+              backgroundColor: '#E5E7EB',
+              borderRadius: 6,
               pointerEvents: 'none',
-              textAlign: 'center',
-              fontWeight: 500,
+              color: '#374151',
+              fontWeight: 600,
               fontSize: '0.75rem',
               lineHeight: '1rem',
-              padding: '5px',
+              padding: '4px',
+              textAlign: 'center',
             }}
           >
             {t.id}

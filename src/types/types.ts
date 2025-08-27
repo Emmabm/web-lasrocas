@@ -1,4 +1,3 @@
-// src/types/types.ts
 export interface Position {
   x: number;
   y: number;
@@ -8,7 +7,6 @@ export interface Guest {
   id: string;
   name: string;
   tableId?: string;
-  // otros campos relevantes
 }
 
 export interface TableclothOption {
@@ -31,13 +29,14 @@ export interface Table {
   width: number;
   height: number;
   isAssignable: boolean;
-  guests: string[]; // IDs de los invitados
+  guests: string[];
   isUsed: boolean;
+  isMain?: boolean; // Agregado
+  numAdults?: number;
+  numChildren?: number;
+  descripcion?: string;
   tablecloth?: string;
   napkinColor?: string;
   centerpiece?: string;
-  tableName?: string;
-  numAdults?: number;
-  numChildren?: number;
-  details?: string;
+  tableName?: string; // Mantenido opcional
 }

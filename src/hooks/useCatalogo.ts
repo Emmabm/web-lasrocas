@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { supabase } from '../supabaseClient'; // Ajustá esto si tu cliente está en otro path
+import { supabase } from '../supabaseClient'; 
 
 type Menu = {
   id: string;
