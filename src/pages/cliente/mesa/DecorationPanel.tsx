@@ -17,6 +17,17 @@ interface Props {
   token: string | null;
 }
 
+// Mapa de combinaciones de imágenes
+const imageMap: Record<string, string> = {
+    'white-white': '/img/mesas/blanco-servilleta-blanca.webp',
+    'white-black': '/img/mesas/blanco-servilleta-negra.webp',
+    'grey-white': '/img/mesas/peltre-servilleta-blanca.webp',
+    'grey-black': '/img/mesas/peltre-servilleta-negra.webp',
+    'black-white': '/img/mesas/negro-servilleta-blanca.webp',
+    'black-black': '/img/mesas/negro-servilleta-negra.webp',
+    'two-tone-white-black': '/img/mesas/mixto.webp',
+};
+
 const DecorationPanel: React.FC<Props> = ({
   globalDecoration,
   updateGlobalDecoration,
@@ -25,6 +36,15 @@ const DecorationPanel: React.FC<Props> = ({
 }) => {
   const navigate = useNavigate();
   const [saving, setSaving] = useState(false);
+
+  // Función para obtener la URL de la imagen
+  const getImageUrl = (tableclothId: string, napkinColorId: string): string => {
+    if (tableclothId === 'two-tone') {
+      return imageMap['two-tone-white-black'];
+    }
+    const key = `${tableclothId}-${napkinColorId}`;
+    return imageMap[key] || '';
+  };
 
   const handleTableclothChange = (id: string) => {
     const option = tableclothOptions.find(t => t.id === id);
@@ -58,8 +78,6 @@ const DecorationPanel: React.FC<Props> = ({
       <h2 className="text-4xl font-extrabold text-gray-900 mb-12 text-center bg-clip-text text-transparent bg-gradient-to-r from-[#FF6B35] to-[#FF8C66] tracking-tight">
         Personaliza tu Decoración
       </h2>
-
-      {/* OPCIONES DE MANTELES */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {tableclothOptions.map(option => (
           <label
@@ -80,8 +98,13 @@ const DecorationPanel: React.FC<Props> = ({
             />
             <div className="flex flex-col items-center gap-4 p-6">
               <div className="relative w-64 h-48 rounded-xl overflow-hidden shadow-md">
+                {/* Lógica de la imagen corregida */}
                 <img
-                  src={option.image}
+                  src={
+                    globalDecoration.tablecloth === option.id
+                      ? getImageUrl(option.id, globalDecoration.napkinColor)
+                      : option.image // Se muestra la imagen predeterminada si no está seleccionada
+                  }
                   alt={option.name}
                   className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
                 />
@@ -92,8 +115,6 @@ const DecorationPanel: React.FC<Props> = ({
                 )}
               </div>
               <span className="text-xl font-semibold text-gray-800">{option.name}</span>
-
-              {/* SERVILLETAS */}
               {globalDecoration.tablecloth === option.id && (
                 <div className="w-full mt-4">
                   <h4 className="text-sm font-semibold text-gray-600 mb-3 uppercase tracking-wider">
@@ -131,8 +152,6 @@ const DecorationPanel: React.FC<Props> = ({
           </label>
         ))}
       </div>
-
-      {/* CENTRO DE MESA */}
       <div className="mt-12 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-8 shadow-sm border border-gray-200">
         <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
           <span className="mr-2">💐</span> Centro de Mesa
@@ -150,8 +169,6 @@ const DecorationPanel: React.FC<Props> = ({
           ))}
         </select>
       </div>
-
-      {/* BOTÓN GUARDAR */}
       <div className="mt-12 flex justify-center">
         <button
           onClick={handleFinalizarYGuardar}

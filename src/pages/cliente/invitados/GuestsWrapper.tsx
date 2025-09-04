@@ -2,57 +2,83 @@ import { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { supabase } from "../../../supabaseClient";
 import Guests from "./Guests";
+import { useUserContext } from "../../../hooks/useUserContext";
 
 const GuestsWrapper = () => {
-  const [eventId, setEventId] = useState<string | null>(null);
-  const [token, setToken] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const [modalMessage, setModalMessage] = useState<string | null>(null);
+  const { token, setToken } = useUserContext();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
   useEffect(() => {
     const urlToken = searchParams.get("token");
-    if (!urlToken) {
-      setModalMessage("No se proporcionó un token");
+
+    // Si el token no existe en el contexto pero sí en la URL, lo guardamos.
+    if (!token && urlToken) {
+      setToken(urlToken);
+    } else if (!token && !urlToken) {
+      setModalMessage("No se proporcionó un token de acceso.");
+      setLoading(false);
       return;
     }
-    setToken(urlToken);
 
-    const fetchEvent = async () => {
+    const fetchEventData = async () => {
+      // Usar el token del contexto, que ahora siempre estará disponible si llegamos aquí.
+      const activeToken = token || urlToken;
+      if (!activeToken) return;
+
       const { data, error } = await supabase
         .from("eventos")
-        .select("id, tipo")
-        .eq("token_acceso", urlToken)
+        .select("id, tipo, estado")
+        .eq("token_acceso", activeToken)
         .single();
 
       if (error || !data) {
-        setModalMessage("Error al obtener el evento: " + (error?.message || "Evento no encontrado"));
+        console.error("Error fetching event:", error?.message);
+        setModalMessage("Error al obtener el evento. Por favor, vuelve a iniciar sesión.");
+        setLoading(false);
+        return;
+      }
+
+      if (data.estado === 'inactivo') {
+        setModalMessage("El evento está inactivo. No podés realizar modificaciones.");
+        setLoading(false);
         return;
       }
 
       if (data.tipo.toLowerCase() !== "fiesta15") {
-        setModalMessage("Esta sección es solo para eventos de tipo Fiesta de 15");
-        navigate(`/horarios?token=${urlToken}`);
+        setModalMessage("Esta sección es solo para eventos de tipo Fiesta de 15.");
+        navigate(`/horarios?token=${activeToken}`);
         return;
       }
 
-      const { data: horarios, error: horariosError } = await supabase
-        .from("schedule_blocks")
-        .select("id")
-        .eq("user_id", data.id)
-        .limit(1);
+      // **Se eliminó la validación de los horarios.**
+      // La página de invitados se mostrará ahora sin importar si los horarios han sido llenados.
 
-      if (horariosError || !horarios.length) {
-        setModalMessage("Debes completar los horarios antes de gestionar invitados");
-        navigate(`/horarios?token=${urlToken}`);
-        return;
-      }
-
-      setEventId(data.id);
+      setLoading(false);
     };
 
-    fetchEvent();
-  }, [searchParams, navigate]);
+    fetchEventData();
+  }, [searchParams, navigate, token, setToken]);
+
+  const handleModalClose = () => {
+    setModalMessage(null);
+    if (modalMessage?.includes("No se proporcionó un token")) {
+      navigate("/cliente");
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="text-center py-8 text-gray-600">Cargando...</div>
+    );
+  }
+
+  // Si no hay token en el contexto, no se renderiza el componente Guests.
+  if (!token) {
+    return null;
+  }
 
   return (
     <div>
@@ -63,23 +89,14 @@ const GuestsWrapper = () => {
             <p className="text-gray-600 mb-6">{modalMessage}</p>
             <button
               className="bg-[#FF6B35] text-white px-4 py-2 rounded-md hover:bg-[#FF6B35]/90 w-full transition-colors"
-              onClick={() => {
-                setModalMessage(null);
-                if (modalMessage.includes("No se proporcionó un token")) {
-                  navigate("/cliente");
-                }
-              }}
+              onClick={handleModalClose}
             >
               Cerrar
             </button>
           </div>
         </div>
       )}
-      {eventId && token ? (
-        <Guests eventId={eventId} token={token} />
-      ) : (
-        <div className="text-center py-8 text-gray-600">Cargando...</div>
-      )}
+      <Guests />
     </div>
   );
 };

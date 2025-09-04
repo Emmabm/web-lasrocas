@@ -40,9 +40,10 @@ const CateringSummary: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const menu = location.pathname.includes('menu4') ? 'menu4' :
-               location.pathname.includes('menu3') ? 'menu3' :
-               location.pathname.includes('menu2') ? 'menu2' : 'menu1';
+  const menu =
+    location.pathname.includes('menu4') ? 'menu4' :
+    location.pathname.includes('menu3') ? 'menu3' :
+    location.pathname.includes('menu2') ? 'menu2' : 'menu1';
 
   useEffect(() => {
     const fetchEventAndFormularios = async () => {
@@ -51,6 +52,8 @@ const CateringSummary: React.FC = () => {
       const urlToken = params.get('token');
       const finalToken = urlToken || contextToken;
 
+      console.log('Token usado:', finalToken);
+
       if (!finalToken) {
         setError('No se proporcionó un token de acceso. Por favor, volvé al inicio.');
         navigate('/cliente');
@@ -58,48 +61,67 @@ const CateringSummary: React.FC = () => {
         return;
       }
 
-      const { data: eventData, error: eventError } = await supabase
-        .from('eventos')
-        .select('id')
-        .eq('token_acceso', finalToken)
-        .single();
+      try {
+        const { data: eventData, error: eventError } = await supabase
+          .from('eventos')
+          .select('id, estado')
+          .eq('token_acceso', finalToken)
+          .single();
 
-      if (eventError || !eventData) {
-        setError('Error al cargar el evento. Verificá el token de acceso.');
+        if (eventError || !eventData) {
+          console.error('Error al cargar evento:', eventError?.message, 'Token:', finalToken);
+          setError('Error al cargar el evento. Verificá el token de acceso.');
+          navigate(`/cliente${finalToken ? `?token=${encodeURIComponent(finalToken)}` : ''}`);
+          setLoading(false);
+          return;
+        }
+
+        if (eventData.estado === 'inactivo') {
+          setError('El evento está inactivo. No podés realizar modificaciones.');
+          setLoading(false);
+          return;
+        }
+
+        console.log('Event ID:', eventData.id);
+
+        const { data: formData, error: formError } = await supabase
+          .from(`${menu}_formularios`)
+          .select('paso, datos')
+          .eq('event_id', eventData.id);
+
+        if (formError || !formData) {
+          console.error('Error al cargar formularios:', formError?.message);
+          setError('Error al cargar las selecciones');
+          setLoading(false);
+          return;
+        }
+
+        const order = ['entrada', 'plato-principal', 'lunch', 'postre', 'menu-infantil', 'bebidas', 'baile'];
+        const sortedFormData = formData.sort((a, b) => {
+          const aIndex = order.findIndex((step) => a.paso.includes(step));
+          const bIndex = order.findIndex((step) => b.paso.includes(step));
+          return aIndex - bIndex;
+        });
+
+        setFormularios(sortedFormData);
+        setEventId(eventData.id);
+        setPaso('catering');
         setLoading(false);
-        return;
-      }
-
-      const { data: formData, error: formError } = await supabase
-        .from(`${menu}_formularios`)
-        .select('paso, datos')
-        .eq('event_id', eventData.id);
-
-      if (formError || !formData) {
-        setError('Error al cargar las selecciones');
+      } catch (err) {
+        console.error('Error inesperado:', err);
+        setError('Error al conectar con la base de datos.');
         setLoading(false);
-        return;
       }
-
-      const order = ['entrada', 'plato-principal', 'lunch', 'postre', 'menu-infantil', 'bebidas', 'baile'];
-      const sortedFormData = formData.sort((a, b) => {
-        const aIndex = order.findIndex((step) => a.paso.includes(step));
-        const bIndex = order.findIndex((step) => b.paso.includes(step));
-        return aIndex - bIndex;
-      });
-
-      setFormularios(sortedFormData);
-      setEventId(eventData.id);
-      setPaso('catering');
-      setLoading(false);
     };
     fetchEventAndFormularios();
-  }, [contextToken, location.search, setPaso, menu, location.pathname]);
+  }, [contextToken, location.search, setPaso, menu, location.pathname, navigate]);
 
   const confirmar = async () => {
     const params = new URLSearchParams(location.search);
     const urlToken = params.get('token');
     const finalToken = urlToken || contextToken;
+
+    console.log('Confirmar - Token:', finalToken, 'Event ID:', eventId);
 
     if (!finalToken) {
       setError('No se proporcionó un token de acceso. Por favor, volvé al inicio.');
@@ -109,6 +131,23 @@ const CateringSummary: React.FC = () => {
 
     if (!eventId) {
       setError('No se encontró el ID del evento');
+      navigate(`/cliente${finalToken ? `?token=${encodeURIComponent(finalToken)}` : ''}`);
+      return;
+    }
+
+    const { data: eventData, error: eventError } = await supabase
+      .from('eventos')
+      .select('estado')
+      .eq('id', eventId)
+      .single();
+
+    if (eventError || !eventData) {
+      setError('Error al cargar el evento');
+      return;
+    }
+
+    if (eventData.estado === 'inactivo') {
+      setError('El evento está inactivo. No podés realizar modificaciones.');
       return;
     }
 
@@ -118,32 +157,44 @@ const CateringSummary: React.FC = () => {
       return acc;
     }, {} as Record<string, any>);
 
-    const { error } = await supabase.rpc('upsert_eventos_resumen', {
-      p_event_id: eventId,
-      p_menu: menu,
-      p_datos: resumenDatos,
-    });
+    console.log('Resumen datos:', resumenDatos);
 
-    if (error) {
-      setError(`No se pudo guardar el resumen: ${error.message}`);
-      return;
+    try {
+      const { error } = await supabase.rpc('upsert_eventos_resumen', {
+        p_event_id: eventId,
+        p_menu: menu,
+        p_datos: resumenDatos,
+      });
+
+      if (error) {
+        console.error('Error en upsert_eventos_resumen:', error.message);
+        setError(`No se pudo guardar el resumen: ${error.message}`);
+        return;
+      }
+
+      const nextPath = menu === 'menu4' ? '/invitados-cena' : '/mesa';
+      console.log('Navegando a', nextPath, 'con token:', finalToken);
+      navigate(`${nextPath}?token=${encodeURIComponent(finalToken)}`);
+    } catch (err) {
+      console.error('Error inesperado en confirmar:', err);
+      setError('Error al guardar el resumen.');
     }
-
-    navigate(menu === 'menu4' ? `/horarios?token=${finalToken}` : `/mesa?token=${finalToken}`);
   };
 
   const volver = () => {
     const params = new URLSearchParams(location.search);
     const urlToken = params.get('token');
+    const finalToken = urlToken || contextToken;
 
-    if (!urlToken && !contextToken) {
+    console.log('Volver - Token:', finalToken);
+
+    if (!finalToken) {
       setError('No se proporcionó un token de acceso. Por favor, volvé al inicio.');
       navigate('/cliente');
       return;
     }
 
-    const finalToken = urlToken || contextToken;
-    navigate(`/catering/${menu}/comidas-baile?token=${finalToken}`);
+    navigate(`/catering/${menu}/comidas-baile?token=${encodeURIComponent(finalToken)}`);
   };
 
   const getSectionTitle = (paso: string) => {
@@ -282,7 +333,7 @@ const CateringSummary: React.FC = () => {
     );
   };
 
-  const expectedSections = menu === 'menu4' 
+  const expectedSections = menu === 'menu4'
     ? ['entrada', 'lunch', 'postre', 'bebidas', 'baile']
     : ['entrada', 'plato-principal', 'postre', 'menu-infantil', 'bebidas', 'baile'];
 

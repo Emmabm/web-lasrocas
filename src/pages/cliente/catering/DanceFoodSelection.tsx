@@ -40,12 +40,18 @@ const DanceFoodSelection: React.FC = () => {
 
       const { data, error } = await supabase
         .from('eventos')
-        .select('id')
+        .select('id, estado')
         .eq('token_acceso', finalToken)
         .single();
 
       if (error || !data) {
         setError('Error al cargar el evento. Verificá el token de acceso.');
+        setLoading(false);
+        return;
+      }
+
+      if (data.estado === 'inactivo') {
+        setError('El evento está inactivo. No podés realizar modificaciones.');
         setLoading(false);
         return;
       }
@@ -100,6 +106,22 @@ const DanceFoodSelection: React.FC = () => {
       return;
     }
 
+    const { data: eventData, error: eventError } = await supabase
+      .from('eventos')
+      .select('estado')
+      .eq('id', eventId)
+      .single();
+
+    if (eventError || !eventData) {
+      setError('Error al cargar el evento');
+      return;
+    }
+
+    if (eventData.estado === 'inactivo') {
+      setError('El evento está inactivo. No podés realizar modificaciones.');
+      return;
+    }
+
     const { error } = await supabase.rpc(`upsert_${menu}_formularios`, {
       p_event_id: eventId,
       p_paso: `baile-${menu}`,
@@ -114,7 +136,7 @@ const DanceFoodSelection: React.FC = () => {
       return;
     }
 
-    navigate(`/catering/${menu}/resumen?token=${finalToken}`);
+    navigate(`/catering/${menu}/resumen?token=${encodeURIComponent(finalToken)}`);
   };
 
   const volver = () => {

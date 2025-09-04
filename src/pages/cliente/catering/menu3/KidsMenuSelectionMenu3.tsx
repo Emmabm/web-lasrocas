@@ -34,12 +34,18 @@ const KidsMenuSelectionMenu3: React.FC = () => {
 
       const { data, error } = await supabase
         .from('eventos')
-        .select('id')
+        .select('id, estado')
         .eq('token_acceso', finalToken)
         .single();
 
       if (error || !data) {
         setError('Error al cargar el evento');
+        setLoading(false);
+        return;
+      }
+
+      if (data.estado === 'inactivo') {
+        setError('El evento está inactivo. No podés realizar modificaciones.');
         setLoading(false);
         return;
       }
@@ -62,6 +68,23 @@ const KidsMenuSelectionMenu3: React.FC = () => {
       return;
     }
 
+    const { data: eventData, error: eventError } = await supabase
+      .from('eventos')
+      .select('estado')
+      .eq('id', eventId)
+      .single();
+
+    if (eventError || !eventData) {
+      setError('Error al cargar el evento');
+      return;
+    }
+
+    if (eventData.estado === 'inactivo') {
+      setError('El evento está inactivo. No podés realizar modificaciones.');
+      return;
+    }
+
+    console.log('KidsMenuSelectionMenu3 continuar - Guardando:', { event_id: eventId, paso: 'menu-infantil-menu3', datos: { menu_infantil: menuInfantil } });
     const { error } = await supabase.rpc('upsert_menu3_formularios', {
       p_event_id: eventId,
       p_paso: 'menu-infantil-menu3',
@@ -69,6 +92,7 @@ const KidsMenuSelectionMenu3: React.FC = () => {
     });
 
     if (error) {
+      console.error('KidsMenuSelectionMenu3 continuar - Error:', error.message);
       setError(`No se pudo guardar: ${error.message}`);
       return;
     }

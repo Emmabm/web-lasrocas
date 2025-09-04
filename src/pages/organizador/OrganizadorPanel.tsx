@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Pencil, Trash2, Copy } from 'lucide-react';
+import { Pencil, Trash2, Copy, CheckCircle, XCircle } from 'lucide-react';
 import { supabase } from '../../supabaseClient';
 import { useNavigate } from 'react-router-dom';
 
@@ -44,12 +44,13 @@ export default function OrganizadorPanel() {
 
       const { data, error } = await supabase
         .from('eventos')
-        .select('*')
+        .select('id, tipo, nombre, created_at, token_acceso, estado')
         .eq('organizador_id', user.id)
         .order('created_at', { ascending: false });
 
       if (error) {
         console.error('Error al cargar eventos:', error.message);
+        alert(`Error al cargar eventos: ${error.message}`);
         return;
       }
       setEventos(data || []);
@@ -92,7 +93,7 @@ export default function OrganizadorPanel() {
           nombre: nombreNuevo,
           token_acceso: token,
           organizador_id: user.id,
-          estado: 'pendiente',
+          estado: 'activo', // Cambiado de 'pendiente' a 'activo' por defecto
         },
       ])
       .select();
@@ -204,6 +205,37 @@ export default function OrganizadorPanel() {
     }
   };
 
+  const toggleEventStatus = async (id: string, currentStatus: 'activo' | 'inactivo') => {
+    try {
+      const sessionResponse = await supabase.auth.getSession();
+      const user = sessionResponse.data.session?.user;
+      if (!user?.id) {
+        console.error('No se encontró usuario autenticado');
+        alert('Error: No se encontró usuario autenticado');
+        return;
+      }
+
+      const newStatus = currentStatus === 'activo' ? 'inactivo' : 'activo';
+      const { error } = await supabase
+        .from('eventos')
+        .update({ estado: newStatus })
+        .eq('id', id)
+        .eq('organizador_id', user.id);
+
+      if (error) {
+        console.error('Error al cambiar estado del evento:', error);
+        alert(`Error al cambiar estado: ${error.message}`);
+        return;
+      }
+
+      setEventos(eventos.map((e) => (e.id === id ? { ...e, estado: newStatus } : e)));
+      alert(`Evento ${newStatus === 'activo' ? 'activado' : 'desactivado'} correctamente`);
+    } catch (err) {
+      console.error('Error inesperado en toggleEventStatus:', err);
+      alert('Error inesperado al cambiar el estado del evento');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 p-6">
       <div className="max-w-6xl mx-auto">
@@ -251,6 +283,7 @@ export default function OrganizadorPanel() {
                   <th className="p-4 text-left">Tipo</th>
                   <th className="p-4 text-left">Nombre</th>
                   <th className="p-4 text-left">Fecha</th>
+                  <th className="p-4 text-left">Estado</th>
                   <th className="p-4 text-left">Link</th>
                   <th className="p-4 text-left">Acciones</th>
                 </tr>
@@ -294,6 +327,15 @@ export default function OrganizadorPanel() {
                         year: 'numeric',
                       })}
                     </td>
+                    <td className="p-4">
+                      <span
+                        className={`font-medium ${
+                          e.estado === 'activo' ? 'text-green-600' : 'text-red-600'
+                        }`}
+                      >
+                        {e.estado.charAt(0).toUpperCase() + e.estado.slice(1)}
+                      </span>
+                    </td>
                     <td className="p-4 max-w-[200px] truncate">
                       <code className="text-blue-600">{e.token_acceso}</code>
                     </td>
@@ -306,7 +348,7 @@ export default function OrganizadorPanel() {
                         >
                           <Copy className="w-4 h-4 mr-1" /> Copiar
                         </button>
-                        {['catering', 'mesas', 'horarios'].map((path) => (
+                        {['catering', 'mesas', 'cena', 'horarios'].map((path) => (
                           <a
                             key={path}
                             href={`/organizador/evento/${e.id}/${path}`}
@@ -333,6 +375,25 @@ export default function OrganizadorPanel() {
                           </button>
                         )}
                         <button
+                          onClick={() => toggleEventStatus(e.id, e.estado)}
+                          className={`flex items-center px-3 py-1 border rounded-lg transition-colors ${
+                            e.estado === 'activo'
+                              ? 'border-red-500 text-red-600 hover:bg-red-500 hover:text-white'
+                              : 'border-green-500 text-green-600 hover:bg-green-500 hover:text-white'
+                          }`}
+                          title={e.estado === 'activo' ? 'Desactivar evento' : 'Activar evento'}
+                        >
+                          {e.estado === 'activo' ? (
+                            <>
+                              <XCircle className="w-4 h-4 mr-1" /> Desactivar
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle className="w-4 h-4 mr-1" /> Activar
+                            </>
+                          )}
+                        </button>
+                        <button
                           onClick={() => eliminarEvento(e.id)}
                           className="flex items-center px-3 py-1 border border-red-500 text-red-600 rounded-lg hover:bg-red-500 hover:text-white transition-colors"
                           title="Eliminar evento"
@@ -345,7 +406,7 @@ export default function OrganizadorPanel() {
                 ))}
                 {eventos.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="text-center py-8 text-gray-500">
+                    <td colSpan={6} className="text-center py-8 text-gray-500">
                       No hay eventos creados aún. ¡Creá uno para empezar!
                     </td>
                   </tr>

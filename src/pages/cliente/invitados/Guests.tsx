@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../../../supabaseClient";
 import { useNavigate } from "react-router-dom";
+import { useUserContext } from '../../../hooks/useUserContext';
 
 interface Guest {
   id: string;
@@ -11,14 +12,12 @@ interface Guest {
   evento_id: string;
 }
 
-interface GuestsProps {
-  eventId: string;
-  token: string;
-}
-
-const Guests = ({ eventId, token }: GuestsProps) => {
+const Guests = () => {
   const navigate = useNavigate();
+  const { token } = useUserContext();
   const [guests, setGuests] = useState<Guest[]>([]);
+  const [eventId, setEventId] = useState<string | null>(null);
+  const [eventoEstado, setEventoEstado] = useState<'activo' | 'inactivo' | null>(null);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [dni, setDni] = useState("");
@@ -28,8 +27,46 @@ const Guests = ({ eventId, token }: GuestsProps) => {
   const [modalMessage, setModalMessage] = useState<string | null>(null);
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
 
+  // Efecto para obtener el eventId usando el token del contexto
+  useEffect(() => {
+    const fetchEventId = async () => {
+      if (!token) {
+        console.error("No se encontró el token en el contexto.");
+        setModalMessage("Error: No se encontró el token de acceso.");
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('eventos')
+        .select('id, estado')
+        .eq('token_acceso', token)
+        .single();
+
+      if (error || !data) {
+        console.error('Error fetching event ID:', error?.message);
+        setModalMessage(`Error al obtener ID del evento: ${error?.message || 'No se encontró el evento.'}`);
+        return;
+      }
+
+      setEventId(data.id);
+      setEventoEstado(data.estado);
+
+      if (data.estado === 'inactivo') {
+        setModalMessage('El evento está inactivo. No podés realizar modificaciones.');
+        // Continúa cargando datos para visualización
+      }
+    };
+
+    fetchEventId();
+  }, [token]);
+
+  // Efecto para cargar los invitados una vez que el eventId esté disponible
   useEffect(() => {
     const fetchGuests = async () => {
+      if (!eventId) {
+        return; // No se ejecuta si no hay eventId
+      }
+
       const { data, error } = await supabase
         .from("invitados")
         .select("*")
@@ -49,7 +86,15 @@ const Guests = ({ eventId, token }: GuestsProps) => {
     fetchGuests();
   }, [eventId]);
 
+  const isCliente = true; // Este componente es para clientes, no organizadores
+  const isBlocked = !!(eventoEstado === 'inactivo' && isCliente);
+
   const addGuest = () => {
+    if (isBlocked) {
+      setModalMessage('El evento está inactivo. No podés realizar modificaciones.');
+      return;
+    }
+
     if (!firstName.trim() || !lastName.trim() || !dni.trim()) {
       setModalMessage("Por favor, completa todos los campos");
       return;
@@ -68,7 +113,7 @@ const Guests = ({ eventId, token }: GuestsProps) => {
       last_name: lastName,
       dni,
       gender: newGender,
-      evento_id: eventId,
+      evento_id: eventId!, // Usamos ! para asegurar que eventId no es null
     };
 
     if (editId) {
@@ -92,6 +137,11 @@ const Guests = ({ eventId, token }: GuestsProps) => {
   };
 
   const deleteGuest = (id: string) => {
+    if (isBlocked) {
+      setModalMessage('El evento está inactivo. No podés realizar modificaciones.');
+      return;
+    }
+
     setGuests(guests.filter((g) => g.id !== id));
     setEditId(null);
     setFirstName("");
@@ -102,6 +152,11 @@ const Guests = ({ eventId, token }: GuestsProps) => {
   };
 
   const startEdit = (guest: Guest) => {
+    if (isBlocked) {
+      setModalMessage('El evento está inactivo. No podés realizar modificaciones.');
+      return;
+    }
+
     setEditId(guest.id);
     setFirstName(guest.first_name);
     setLastName(guest.last_name);
@@ -120,11 +175,17 @@ const Guests = ({ eventId, token }: GuestsProps) => {
   };
 
   const handleFinalize = async () => {
+    if (isBlocked) {
+      setModalMessage('El evento está inactivo. No podés realizar modificaciones.');
+      return;
+    }
+
     if (guests.length === 0) {
       setModalMessage("Debes agregar al menos un invitado antes de finalizar");
       return;
     }
 
+    // Primero, eliminamos los invitados existentes para evitar duplicados
     const { error: deleteError } = await supabase
       .from("invitados")
       .delete()
@@ -136,16 +197,8 @@ const Guests = ({ eventId, token }: GuestsProps) => {
       return;
     }
 
-    const { error } = await supabase.from("invitados").insert(
-      guests.map((guest) => ({
-        id: guest.id,
-        first_name: guest.first_name,
-        last_name: guest.last_name,
-        dni: guest.dni,
-        gender: guest.gender,
-        evento_id: eventId,
-      }))
-    );
+    // Luego, insertamos la lista completa de invitados
+    const { error } = await supabase.from("invitados").insert(guests);
 
     if (error) {
       console.error("Error al guardar invitados:", error.message);
@@ -173,24 +226,28 @@ const Guests = ({ eventId, token }: GuestsProps) => {
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
                   placeholder="Apellido"
+                  disabled={isBlocked}
                 />
                 <input
                   className="border border-gray-300 px-2 py-1 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF6B35] text-base min-w-[120px]"
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
                   placeholder="Nombre"
+                  disabled={isBlocked}
                 />
                 <input
                   className="border border-gray-300 px-2 py-1 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF6B35] text-base min-w-[120px]"
                   value={dni}
                   onChange={(e) => setDni(e.target.value)}
                   placeholder="DNI"
+                  disabled={isBlocked}
                 />
                 {activeTab === "all" && (
                   <select
                     className="border border-gray-300 px-2 py-1 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF6B35] text-base min-w-[120px]"
                     value={gender}
                     onChange={(e) => setGender(e.target.value as "male" | "female")}
+                    disabled={isBlocked}
                   >
                     <option value="male">Hombre</option>
                     <option value="female">Mujer</option>
@@ -200,6 +257,7 @@ const Guests = ({ eventId, token }: GuestsProps) => {
                   <button
                     className="bg-green-600 text-white px-3 py-1 rounded-md hover:bg-green-700 text-base"
                     onClick={addGuest}
+                    disabled={isBlocked}
                   >
                     Guardar
                   </button>
@@ -228,12 +286,14 @@ const Guests = ({ eventId, token }: GuestsProps) => {
                       <button
                         className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         onClick={() => startEdit(guest)}
+                        disabled={isBlocked}
                       >
                         Editar
                       </button>
                       <button
                         className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
                         onClick={() => deleteGuest(guest.id)}
+                        disabled={isBlocked}
                       >
                         Eliminar
                       </button>
@@ -250,6 +310,12 @@ const Guests = ({ eventId, token }: GuestsProps) => {
       </ul>
     </div>
   );
+
+  if (!eventId) {
+    return (
+      <div className="text-center py-8 text-gray-600">Cargando invitados...</div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto p-4 sm:p-8">
@@ -297,6 +363,7 @@ const Guests = ({ eventId, token }: GuestsProps) => {
             placeholder="Apellido"
             value={lastName}
             onChange={(e) => setLastName(e.target.value)}
+            disabled={isBlocked}
           />
           <input
             type="text"
@@ -304,6 +371,7 @@ const Guests = ({ eventId, token }: GuestsProps) => {
             placeholder="Nombre"
             value={firstName}
             onChange={(e) => setFirstName(e.target.value)}
+            disabled={isBlocked}
           />
           <input
             type="text"
@@ -311,12 +379,14 @@ const Guests = ({ eventId, token }: GuestsProps) => {
             placeholder="DNI"
             value={dni}
             onChange={(e) => setDni(e.target.value)}
+            disabled={isBlocked}
           />
           {activeTab === "all" && (
             <select
               className="border border-gray-300 px-4 py-3 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF6B35] transition-all text-base"
               value={gender}
               onChange={(e) => setGender(e.target.value as "male" | "female")}
+              disabled={isBlocked}
             >
               <option value="male">Hombre</option>
               <option value="female">Mujer</option>
@@ -325,6 +395,7 @@ const Guests = ({ eventId, token }: GuestsProps) => {
           <button
             className="bg-[#FF6B35] text-white px-4 py-3 rounded-md hover:bg-[#FF6B35]/90 transition-colors text-base"
             onClick={addGuest}
+            disabled={isBlocked}
           >
             {editId ? "Guardar cambios" : "Agregar"}
           </button>
@@ -343,6 +414,7 @@ const Guests = ({ eventId, token }: GuestsProps) => {
           <button
             className="bg-[#FF6B35] text-white px-6 py-3 rounded-md hover:bg-[#FF6B35]/90 w-full text-base font-semibold transition-colors"
             onClick={handleFinalize}
+            disabled={isBlocked}
           >
             Finalizar
           </button>

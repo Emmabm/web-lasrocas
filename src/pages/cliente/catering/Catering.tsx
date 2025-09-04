@@ -16,6 +16,8 @@ const Catering = () => {
   const { setMenuSeleccionado } = useUserContext();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [modalMessage, setModalMessage] = useState<string | null>(null);
+  const [eventoEstado, setEventoEstado] = useState<'activo' | 'inactivo' | null>(null);
 
   const query = new URLSearchParams(location.search);
   const token = query.get('token');
@@ -31,7 +33,7 @@ const Catering = () => {
       try {
         const { data, error } = await supabase
           .from('eventos')
-          .select('id')
+          .select('id, estado')
           .eq('token_acceso', token)
           .single();
 
@@ -40,6 +42,14 @@ const Catering = () => {
           setLoading(false);
           return;
         }
+
+        setEventoEstado(data.estado);
+        if (data.estado === 'inactivo') {
+          setModalMessage('El evento está inactivo. No podés realizar modificaciones.');
+          setLoading(false);
+          return;
+        }
+
         setLoading(false);
       } catch (err) {
         setError('Error al conectar con la base de datos');
@@ -50,12 +60,42 @@ const Catering = () => {
     verifyToken();
   }, [token]);
 
-  const handleMenuSelect = (menuId: string) => {
-    if (token) {
-      setMenuSeleccionado(menuId); // Setea el menú seleccionado en el contexto
+  const handleMenuSelect = async (menuId: string) => {
+    if (!token) {
+      setError('No se proporcionó un token');
+      return;
+    }
+
+    if (eventoEstado === 'inactivo') {
+      setModalMessage('El evento está inactivo. No podés realizar modificaciones.');
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('eventos')
+        .select('estado')
+        .eq('token_acceso', token)
+        .single();
+
+      if (error || !data) {
+        setError('Evento no encontrado');
+        return;
+      }
+
+      if (data.estado === 'inactivo') {
+        setModalMessage('El evento está inactivo. No podés realizar modificaciones.');
+        return;
+      }
+
+      setMenuSeleccionado(menuId);
       navigate(`/catering/${menuId}/recepcion?token=${token}`);
+    } catch (err) {
+      setError('Error al conectar con la base de datos');
     }
   };
+
+  const isBlocked = eventoEstado === 'inactivo';
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-white">
@@ -71,6 +111,20 @@ const Catering = () => {
 
   return (
     <div className="min-h-screen bg-white flex justify-center pt-11 pb-20 px-6">
+      {modalMessage && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">Atención</h3>
+            <p className="text-gray-600 mb-6">{modalMessage}</p>
+            <button
+              className="bg-[#FF6B35] text-white px-4 py-2 rounded-md hover:bg-[#FF6B35]/90 w-full transition-colors"
+              onClick={() => setModalMessage(null)}
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
+      )}
       <div className="max-w-5xl w-full bg-white rounded-2xl shadow-lg pt-6 pb-4 px-8">
         <h1 className="text-4xl font-serif font-bold text-center text-gray-800 mb-6">
           Selección de Catering
@@ -88,7 +142,8 @@ const Catering = () => {
               <p className="text-gray-600 text-sm">{menu.descripcion}</p>
               <button
                 onClick={() => handleMenuSelect(menu.id)}
-                className="mt-4 bg-[#FF6B35] text-white px-4 py-2 rounded-md hover:bg-[#e55a2e] transition"
+                className={`mt-4 bg-[#FF6B35] text-white px-4 py-2 rounded-md hover:bg-[#e55a2e] transition ${isBlocked ? 'opacity-50 cursor-not-allowed' : ''}`}
+                disabled={isBlocked}
               >
                 Seleccionar
               </button>

@@ -3,10 +3,15 @@ export interface Position {
   y: number;
 }
 
-export interface Guest {
-  id: string;
+// Se elimina la interfaz `Guest` ya que no se usa con la nueva lógica.
+
+export interface GuestGroup {
+  id?: string; // Nuevo: para identificar cada grupo de forma única en el frontend
   name: string;
-  tableId?: string;
+  numAdults: number;
+  numChildren: number;
+  numBabies: number;
+  details: string;
 }
 
 export interface TableclothOption {
@@ -31,12 +36,14 @@ export interface Table {
   isAssignable: boolean;
   guests: string[];
   isUsed: boolean;
-  isMain?: boolean; // Agregado
+  isMain?: boolean;
   numAdults?: number;
   numChildren?: number;
+  numBabies?: number; // Nuevo: para almacenar el total de bebés
   descripcion?: string;
   tablecloth?: string;
   napkinColor?: string;
   centerpiece?: string;
-  tableName?: string; // Mantenido opcional
+  tableName?: string;
+  guestGroups?: GuestGroup[]; // ¡Nuevo y crucial para la nueva lógica!
 }

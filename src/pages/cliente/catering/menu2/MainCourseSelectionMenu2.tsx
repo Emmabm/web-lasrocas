@@ -4,9 +4,24 @@ import { supabase } from '../../../../supabaseClient';
 import { useUserContext } from '../../../../hooks/useUserContext';
 
 const carnes = [
-  { id: 'lomo', nombre: 'Lomo de ternera grillado', descripcion: 'Clásico y elegante, cocido al punto justo.', imagen: '/img/platos/lomo-de-ternera.webp' },
-  { id: 'pollo-relleno', nombre: 'Pollo relleno con mozarella y jamón cocido', descripcion: 'Jugoso y sabroso.', imagen: '/img/platos/pollo-relleno.webp' },
-  { id: 'bondiola', nombre: 'Bondiola de cerdo', descripcion: 'Tierna, caramelizada y deliciosa.', imagen: '/img/platos/bondiola-de-cerdo.webp' },
+  { 
+    id: 'lomo', 
+    nombre: 'Lomo de ternera grillado', 
+    descripcion: 'Lomo de ternera con salsa de chimi de hierbas acompañado de mil hojas de papas y mezclum de verdes con tomatitos cherry.', 
+    imagen: '/img/platos/lomo-de-ternera.webp' 
+  },
+  { 
+    id: 'pollo-relleno', 
+    nombre: 'Pollo relleno con mozarella y jamón cocido', 
+    descripcion: 'Pollo relleno con salsa 4 quesos acompañado con puré de papas y verduras al horno en julianas.', 
+    imagen: '/img/platos/pollo-relleno.webp' 
+  },
+  { 
+    id: 'bondiola', 
+    nombre: 'Bondiola de cerdo', 
+    descripcion: 'Bondiola de cerdo con salsa barbacoa acompañado con puré de batatas y mezclum de verdes con tomatitos cherry.', 
+    imagen: '/img/platos/bondiola-de-cerdo.webp' 
+  },
 ];
 
 const salsas = [
@@ -60,12 +75,18 @@ const MainCourseSelectionMenu2: React.FC = () => {
 
       const { data, error } = await supabase
         .from('eventos')
-        .select('id')
+        .select('id, estado')
         .eq('token_acceso', finalToken)
         .single();
 
       if (error || !data) {
         setError('Error al cargar el evento');
+        setLoading(false);
+        return;
+      }
+
+      if (data.estado === 'inactivo') {
+        setError('El evento está inactivo. No podés realizar modificaciones.');
         setLoading(false);
         return;
       }
@@ -96,6 +117,22 @@ const MainCourseSelectionMenu2: React.FC = () => {
 
     if (!eventId) {
       setError('No se encontró el ID del evento');
+      return;
+    }
+
+    const { data: eventData, error: eventError } = await supabase
+      .from('eventos')
+      .select('estado')
+      .eq('id', eventId)
+      .single();
+
+    if (eventError || !eventData) {
+      setError('Error al cargar el evento');
+      return;
+    }
+
+    if (eventData.estado === 'inactivo') {
+      setError('El evento está inactivo. No podés realizar modificaciones.');
       return;
     }
 
@@ -140,25 +177,39 @@ const MainCourseSelectionMenu2: React.FC = () => {
           Plato Principal — Menú 2 (Clásico)
         </h1>
         <p className="text-center text-gray-600 text-lg mb-8">
-          Elegí <span className="text-[#FF6B35] font-semibold">1 plato, 1 salsa y 2 guarniciones</span> para tu plato principal.
+          Elegí <span className="text-[#FF6B35] font-semibold">1 carne, 1 salsa y 2 guarniciones</span> para tu plato principal.
         </p>
 
         <section className="mb-12">
-          <h2 className="text-2xl font-semibold text-gray-800 mb-6">🍽️ Platos</h2>
+          <h2 className="text-2xl font-semibold text-gray-800 mb-6">🍽️ Ejemplos de Platos</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {carnes.map((item) => (
               <div
                 key={item.id}
-                onClick={() => setCarne(item.nombre)}
-                className={`rounded-xl border-2 cursor-pointer overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ${
-                  carne === item.nombre ? 'border-[#FF6B35] bg-orange-50' : 'border-gray-200'
-                }`}
+                className="rounded-xl border-2 border-gray-200 overflow-hidden"
               >
                 <img src={item.imagen} alt={item.nombre} className="w-full h-48 object-cover" />
                 <div className="p-4 space-y-1">
                   <h3 className="font-semibold text-lg text-gray-800">{item.nombre}</h3>
                   <p className="text-sm text-gray-600">{item.descripcion}</p>
                 </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="mb-12">
+          <h2 className="text-2xl font-semibold text-gray-800 mb-6">🥩 Carnes</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {carnes.map((item) => (
+              <div
+                key={item.id}
+                onClick={() => setCarne(item.nombre)}
+                className={`p-5 rounded-xl border-2 text-center cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ${
+                  carne === item.nombre ? 'border-[#FF6B35] bg-orange-50' : 'border-gray-200'
+                }`}
+              >
+                <p className="text-base font-medium text-gray-800">{item.nombre}</p>
               </div>
             ))}
           </div>

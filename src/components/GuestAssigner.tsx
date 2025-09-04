@@ -1,37 +1,61 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { X, AlertCircle } from 'lucide-react';
 import { Table } from '../types/types';
+
+interface GuestGroup {
+  id?: string;
+  name: string;
+  numAdults: number;
+  numChildren: number;
+  numBabies: number;
+  details: string;
+}
 
 interface GuestAssignerProps {
   table: Table;
   onClose: () => void;
   onSave: (
     tableId: string,
-    guests: string[],
-    descripcion: string,
+    guestGroups: GuestGroup[],
     numAdults: number,
     numChildren: number,
-    tableName?: string
+    numBabies: number
   ) => void;
+  isBlocked: boolean;
+  onBlockedAction: () => void; // Nuevo callback para notificar acciones bloqueadas
 }
 
-const GuestAssigner: React.FC<GuestAssignerProps> = ({ table, onClose, onSave }) => {
-  const [tableName, setTableName] = useState(table.tableName || '');
-  const [numAdults, setNumAdults] = useState(table.numAdults ?? 0);
-  const [numChildren, setNumChildren] = useState(table.numChildren ?? 0);
-  const [details, setDetails] = useState(table.descripcion || '');
+const MIN_GUESTS = 8;
+const MAX_GUESTS = 11;
+const MIN_GUESTS_MAIN = 8;
+const MAX_GUESTS_MAIN = 15;
+
+const GuestAssigner: React.FC<GuestAssignerProps> = ({ table, onClose, onSave, isBlocked, onBlockedAction }) => {
+  const [guestGroups, setGuestGroups] = useState<GuestGroup[]>([]);
+  const [newGroup, setNewGroup] = useState<Omit<GuestGroup, 'id'>>({
+    name: '',
+    numAdults: 0,
+    numChildren: 0,
+    numBabies: 0,
+    details: ''
+  });
   const modalRef = useRef<HTMLDivElement>(null);
 
-  // Inicializar los valores cuando cambia la mesa
   useEffect(() => {
-    setTableName(table.isMain ? 'Principal' : (table.tableName || ''));
-    setNumAdults(table.numAdults ?? 0);
-    setNumChildren(table.numChildren ?? 0);
-    setDetails(table.descripcion || '');
-    console.log('Inicializando GuestAssigner:', { tableId: table.id, tableName: table.tableName, numAdults: table.numAdults, numChildren: table.numChildren, descripcion: table.descripcion });
+    if (table.guestGroups && table.guestGroups.length > 0) {
+      setGuestGroups(table.guestGroups);
+    } else {
+      setGuestGroups([]);
+    }
+    setNewGroup({
+      name: '',
+      numAdults: 0,
+      numChildren: 0,
+      numBabies: 0,
+      details: ''
+    });
   }, [table]);
 
-  // Cerrar modal al hacer clic afuera
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (modalRef.current && !modalRef.current.contains(e.target as Node)) {
@@ -42,30 +66,92 @@ const GuestAssigner: React.FC<GuestAssignerProps> = ({ table, onClose, onSave })
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [onClose]);
 
-  const totalGuests = numAdults + numChildren;
-  const isTooFew = totalGuests < 8;
-  const isTooMany = totalGuests > 11;
+  const totalGuests = useMemo(() =>
+    guestGroups.reduce((sum, group) => sum + group.numAdults + group.numChildren + group.numBabies, 0),
+    [guestGroups]
+  );
+
+  const handleAddGroup = () => {
+    if (isBlocked) {
+      onBlockedAction();
+      return;
+    }
+    const totalNewGroup = newGroup.numAdults + newGroup.numChildren + newGroup.numBabies;
+    if (newGroup.name.trim() === '' || totalNewGroup === 0) {
+      return;
+    }
+    setGuestGroups(prev => [
+      ...prev,
+      {
+        ...newGroup,
+        id: Math.random().toString(36).substring(7),
+        name: newGroup.name.trim()
+      }
+    ]);
+    setNewGroup({
+      name: '',
+      numAdults: 0,
+      numChildren: 0,
+      numBabies: 0,
+      details: ''
+    });
+  };
+
+  const handleRemoveGroup = (idToRemove: string) => {
+    if (isBlocked) {
+      onBlockedAction();
+      return;
+    }
+    setGuestGroups(prev => prev.filter(group => group.id !== idToRemove));
+  };
 
   const handleSave = () => {
-    const formattedGuests: string[] = [];
-    if (numAdults > 0) formattedGuests.push(`• ${numAdults} adulto${numAdults !== 1 ? 's' : ''}`);
-    if (numChildren > 0) formattedGuests.push(`• ${numChildren} niño${numChildren !== 1 ? 's' : ''}`);
-    if (details) formattedGuests.push(`• Detalles: ${details}`);
+    if (isBlocked) {
+      onBlockedAction();
+      return;
+    }
+    const totalAdults = guestGroups.reduce((sum, group) => sum + group.numAdults, 0);
+    const totalChildren = guestGroups.reduce((sum, group) => sum + group.numChildren, 0);
+    const totalBabies = guestGroups.reduce((sum, group) => sum + group.numBabies, 0);
 
-    console.log('Guardando:', { tableId: table.id, guests: formattedGuests, descripcion: details.trim(), numAdults, numChildren, tableName });
+    const minGuests = table.isMain ? MIN_GUESTS_MAIN : MIN_GUESTS;
+    const maxGuests = table.isMain ? MAX_GUESTS_MAIN : MAX_GUESTS;
+
+    if (totalGuests === 0 || totalGuests < minGuests || totalGuests > maxGuests) {
+      return;
+    }
 
     onSave(
       table.id,
-      formattedGuests,
-      details.trim(),
-      numAdults,
-      numChildren,
-      table.isMain ? 'Principal' : (tableName.trim() || undefined)
+      guestGroups,
+      totalAdults,
+      totalChildren,
+      totalBabies
     );
   };
 
+  const minGuests = table.isMain ? MIN_GUESTS_MAIN : MIN_GUESTS;
+  const maxGuests = table.isMain ? MAX_GUESTS_MAIN : MAX_GUESTS;
+
+  const isAddButtonDisabled = isBlocked ||
+    newGroup.name.trim() === '' ||
+    (newGroup.numAdults + newGroup.numChildren + newGroup.numBabies) === 0 ||
+    (totalGuests + (newGroup.numAdults + newGroup.numChildren + newGroup.numBabies) > maxGuests);
+
+  const isSaveButtonDisabled = isBlocked || totalGuests === 0 || totalGuests < minGuests || totalGuests > maxGuests;
+
+  const getSaveMessage = () => {
+    if (isBlocked) return 'El evento está inactivo. No podés realizar modificaciones.';
+    if (totalGuests === 0) return 'No se puede guardar una mesa sin invitados.';
+    if (totalGuests > 0 && totalGuests < minGuests) return `No se puede guardar una mesa con menos de ${minGuests} personas.`;
+    if (totalGuests > maxGuests) return `No se puede guardar una mesa con más de ${maxGuests} personas.`;
+    return '';
+  };
+
+  const saveMessage = getSaveMessage();
+
   return (
-    <div className="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-[60] p-4">
       <div ref={modalRef} className="bg-white rounded-lg shadow-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
         <div className="p-6">
           <div className="flex justify-between items-center mb-4">
@@ -74,105 +160,117 @@ const GuestAssigner: React.FC<GuestAssignerProps> = ({ table, onClose, onSave })
               <X className="h-5 w-5" />
             </button>
           </div>
-
-          {!table.isMain && (
-            <div className="mb-4">
-              <label htmlFor="tableName" className="block text-sm font-medium text-gray-700 mb-1">
-                Nombre de la mesa
-              </label>
+          <div className="mb-4">
+            <h3 className="text-lg font-medium text-gray-800">Grupos asignados ({totalGuests}/{maxGuests})</h3>
+            <ul className="mt-2 space-y-2">
+              {guestGroups.length > 0 ? (
+                guestGroups.map((group) => (
+                  <li key={group.id} className="flex justify-between items-center p-3 bg-gray-100 rounded-md">
+                    <div>
+                      <p className="font-semibold">{group.name}</p>
+                      <p className="text-sm text-gray-600">
+                        {group.numAdults} adulto(s), {group.numChildren} niño(s), {group.numBabies} bebé(s)
+                      </p>
+                      {group.details && <p className="text-xs text-gray-500 mt-1">Detalles: {group.details}</p>}
+                    </div>
+                    <button
+                      onClick={() => handleRemoveGroup(group.id!)}
+                      className={`text-red-500 hover:text-red-700 ${isBlocked ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      disabled={isBlocked}
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </li>
+                ))
+              ) : (
+                <p className="text-gray-500 text-sm italic">Esta mesa no tiene invitados asignados.</p>
+              )}
+            </ul>
+          </div>
+          <div className="border-t border-gray-200 pt-4">
+            <h3 className="text-lg font-medium text-gray-800 mb-3">Agregar nuevo grupo</h3>
+            <div className="space-y-3">
               <input
                 type="text"
-                id="tableName"
-                placeholder="ej. Familia Pérez"
-                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/50"
-                value={tableName}
-                onChange={(e) => setTableName(e.target.value)}
+                placeholder="Nombre y apellido"
+                className={`w-full p-2 border border-gray-300 rounded-md ${isBlocked ? 'opacity-50 cursor-not-allowed' : ''}`}
+                value={newGroup.name}
+                onChange={(e) => isBlocked ? onBlockedAction() : setNewGroup({ ...newGroup, name: e.target.value })}
+                disabled={isBlocked}
               />
-            </div>
-          )}
-
-          {table.isMain && (
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Nombre de la mesa</label>
-              <input
-                type="text"
-                value="Principal"
-                disabled
-                className="w-full p-2 border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed"
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Adultos</label>
+                  <input
+                    type="number"
+                    min={0}
+                    className={`w-full p-2 border border-gray-300 rounded-md ${isBlocked ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    value={newGroup.numAdults}
+                    onChange={(e) => isBlocked ? onBlockedAction() : setNewGroup({ ...newGroup, numAdults: Number(e.target.value) || 0 })}
+                    disabled={isBlocked}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Niños</label>
+                  <input
+                    type="number"
+                    min={0}
+                    className={`w-full p-2 border border-gray-300 rounded-md ${isBlocked ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    value={newGroup.numChildren}
+                    onChange={(e) => isBlocked ? onBlockedAction() : setNewGroup({ ...newGroup, numChildren: Number(e.target.value) || 0 })}
+                    disabled={isBlocked}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Bebés</label>
+                  <input
+                    type="number"
+                    min={0}
+                    className={`w-full p-2 border border-gray-300 rounded-md ${isBlocked ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    value={newGroup.numBabies}
+                    onChange={(e) => isBlocked ? onBlockedAction() : setNewGroup({ ...newGroup, numBabies: Number(e.target.value) || 0 })}
+                    disabled={isBlocked}
+                  />
+                </div>
+              </div>
+              <textarea
+                rows={2}
+                className={`w-full p-2 border border-gray-300 rounded-md ${isBlocked ? 'opacity-50 cursor-not-allowed' : ''}`}
+                placeholder="Detalles especiales (celíacos, veganos, etc.)"
+                value={newGroup.details}
+                onChange={(e) => isBlocked ? onBlockedAction() : setNewGroup({ ...newGroup, details: e.target.value })}
+                disabled={isBlocked}
               />
+              <button
+                onClick={handleAddGroup}
+                className={`w-full px-4 py-2 rounded-md font-medium transition-colors ${isAddButtonDisabled ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-[#FF6B35] text-white hover:bg-[#FF6B35]/90'}`}
+                disabled={isAddButtonDisabled}
+              >
+                Agregar Grupo
+              </button>
             </div>
-          )}
-
-          <div className="mb-4">
-            <label htmlFor="numAdults" className="block text-sm font-medium text-gray-700 mb-1">
-              Cantidad de adultos
-            </label>
-            <input
-              type="number"
-              id="numAdults"
-              min={0}
-              className="w-full p-2 border border-gray-300 rounded-md"
-              value={numAdults}
-              onChange={(e) => setNumAdults(Number(e.target.value) || 0)}
-            />
           </div>
-
-          <div className="mb-4">
-            <label htmlFor="numChildren" className="block text-sm font-medium text-gray-700 mb-1">
-              Cantidad de niños
-            </label>
-            <input
-              type="number"
-              id="numChildren"
-              min={0}
-              className="w-full p-2 border border-gray-300 rounded-md"
-              value={numChildren}
-              onChange={(e) => setNumChildren(Number(e.target.value) || 0)}
-            />
-          </div>
-
-          <div className="mb-4">
-            <label htmlFor="details" className="block text-sm font-medium text-gray-700 mb-1">
-              Detalles especiales (celíacos, etc.)
-            </label>
-            <textarea
-              id="details"
-              rows={2}
-              className="w-full p-2 border border-gray-300 rounded-md"
-              placeholder="Ej. 2 celíacos, 1 vegano, 1 bebé..."
-              value={details}
-              onChange={(e) => setDetails(e.target.value)}
-            ></textarea>
-          </div>
-
-          {(isTooFew || isTooMany) && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-100 rounded-md">
+          {saveMessage && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-100 rounded-md mt-4">
               <div className="flex">
                 <AlertCircle className="h-5 w-5 text-red-500 mr-2 flex-shrink-0" />
                 <div className="text-sm text-red-700">
-                  {isTooFew
-                    ? 'Cada mesa debe tener al menos 8 personas.'
-                    : 'Esta mesa tiene más de 11 personas. Por favor reducí la cantidad.'}
+                  {saveMessage}
                 </div>
               </div>
             </div>
           )}
-
-          <div className="flex justify-between">
+          <div className="flex justify-between mt-4">
             <button
               onClick={onClose}
-              className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
+              className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
             >
               Cancelar
             </button>
             <button
               onClick={handleSave}
-              disabled={isTooFew || isTooMany}
-              className={`px-4 py-2 rounded-md text-white ${
-                isTooFew || isTooMany
-                  ? 'bg-gray-400 cursor-not-allowed'
-                  : 'bg-[#FF6B35] hover:bg-[#FF6B35]/90'
-              }`}
+              disabled={isSaveButtonDisabled}
+              className={`px-4 py-2 rounded-md text-white ${isSaveButtonDisabled ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#FF6B35] hover:bg-[#FF6B35]/90'}`}
             >
               Guardar
             </button>

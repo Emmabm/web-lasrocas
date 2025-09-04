@@ -62,12 +62,18 @@ const DrinksSelection: React.FC = () => {
 
       const { data, error } = await supabase
         .from('eventos')
-        .select('id')
+        .select('id, estado')
         .eq('token_acceso', finalToken)
         .single();
 
       if (error || !data) {
         setError('Error al cargar el evento. Verificá el token de acceso.');
+        setLoading(false);
+        return;
+      }
+
+      if (data.estado === 'inactivo') {
+        setError('El evento está inactivo. No podés realizar modificaciones.');
         setLoading(false);
         return;
       }
@@ -98,6 +104,22 @@ const DrinksSelection: React.FC = () => {
 
     if (!eventId) {
       setError('No se encontró el ID del evento');
+      return;
+    }
+
+    const { data: eventData, error: eventError } = await supabase
+      .from('eventos')
+      .select('estado')
+      .eq('id', eventId)
+      .single();
+
+    if (eventError || !eventData) {
+      setError('Error al cargar el evento');
+      return;
+    }
+
+    if (eventData.estado === 'inactivo') {
+      setError('El evento está inactivo. No podés realizar modificaciones.');
       return;
     }
 

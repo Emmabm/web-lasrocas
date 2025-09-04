@@ -34,76 +34,103 @@ const EventSchedule: React.FC = () => {
   const [editingStaffId, setEditingStaffId] = useState<string | null>(null);
   const [eventId, setEventId] = useState<string | null>(null);
   const [eventType, setEventType] = useState<string | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  const [modalMessage, setModalMessage] = useState<string | null>(null);
+  const [scheduleError, setScheduleError] = useState<string | null>(null);
+  const [staffError, setStaffError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [eventoEstado, setEventoEstado] = useState<'activo' | 'inactivo' | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
+  const [organizadorId, setOrganizadorId] = useState<string | null>(null);
 
   const idGen = useRef(() => crypto.randomUUID());
 
   useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { session }, error } = await supabase.auth.getSession();
-      if (error) {
-        console.error('Error checking auth:', error.message);
-        setErrorMessage('Error al verificar autenticación: ' + error.message);
-        return;
-      }
-      setIsAuthenticated(!!session);
-      if (session) {
-        console.log('Usuario autenticado:', session.user.id);
-        setUserId(session.user.id);
-      } else {
-        setErrorMessage('Usuario no autenticado. Por favor, inicia sesión.');
-      }
-    };
-
-    const fetchEvent = async () => {
+    const verifyToken = async () => {
       const params = new URLSearchParams(location.search);
       const tokenParam = params.get('token');
-      console.log('Horarios.tsx - Estado del token:', { tokenParam, token });
-      
-      // Persistir el token en el contexto
-      if (tokenParam && token !== tokenParam) {
+
+      if (!tokenParam) {
+        setError('No se proporcionó un token');
+        setLoading(false);
+        return;
+      }
+
+      if (token !== tokenParam) {
         setToken(tokenParam);
       }
 
-      if (!tokenParam) {
-        setErrorMessage('No se proporcionó un token');
-        return;
+      try {
+        const { data: session } = await supabase.auth.getSession();
+        const currentUserId = session.session?.user.id || null;
+        setUserId(currentUserId);
+
+        const { data, error } = await supabase
+          .from('eventos')
+          .select('id, tipo, organizador_id, estado')
+          .eq('token_acceso', tokenParam)
+          .single();
+
+        if (error || !data) {
+          setError('Evento no encontrado');
+          setLoading(false);
+          return;
+        }
+
+        setEventId(data.id);
+        setEventType(data.tipo);
+        setOrganizadorId(data.organizador_id);
+        setEventoEstado(data.estado);
+
+        if (data.estado === 'inactivo' && (!currentUserId || currentUserId !== data.organizador_id)) {
+          setModalMessage('El evento está inactivo. No podés realizar modificaciones.');
+        }
+
+        setLoading(false);
+      } catch (err) {
+        setError('Error al conectar con la base de datos');
+        setLoading(false);
       }
-
-      const { data, error } = await supabase
-        .from('eventos')
-        .select('id, tipo, organizador_id')
-        .eq('token_acceso', tokenParam)
-        .single();
-
-      if (error || !data) {
-        console.error('Error fetching event:', error?.message);
-        setErrorMessage(`Error al obtener evento: ${error?.message || 'No data'}`);
-        return;
-      }
-
-      console.log('Evento encontrado:', { id: data.id, tipo: data.tipo, organizador_id: data.organizador_id });
-      if (userId && data.organizador_id !== userId) {
-        console.error('Mismatch organizador_id:', { event_organizador_id: data.organizador_id, user_id: userId });
-        setErrorMessage('No tienes permiso para este evento.');
-        return;
-      }
-
-      setEventId(data.id);
-      setEventType(data.tipo);
     };
 
-    checkAuth();
-    if (userId) fetchEvent();
-  }, [location.search, userId, setToken, token]);
+    verifyToken();
+  }, [location.search, setToken, token]);
 
   useEffect(() => {
-    if (!eventId || !isAuthenticated) return;
+    if (!eventId) return;
+
+    const subscription = supabase
+      .channel('eventos-channel')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'eventos',
+          filter: `id=eq.${eventId}`,
+        },
+        (payload) => {
+          if (payload.new.estado !== eventoEstado) {
+            setEventoEstado(payload.new.estado);
+            if (payload.new.estado === 'inactivo' && (!userId || userId !== organizadorId)) {
+              setModalMessage('El evento está inactivo. No podés realizar modificaciones.');
+            } else if (payload.new.estado === 'activo') {
+              setModalMessage(null);
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(subscription);
+    };
+  }, [eventId, eventoEstado, userId, organizadorId]);
+
+  useEffect(() => {
+    if (!eventId) return;
 
     const fetchData = async () => {
-      console.log('Fetching data for eventId:', eventId);
       const { data: sched, error: schedError } = await supabase
         .from('schedule_blocks')
         .select('*')
@@ -114,151 +141,175 @@ const EventSchedule: React.FC = () => {
         .eq('user_id', String(eventId));
 
       if (schedError) {
-        console.error('Error fetching schedule:', schedError.message);
-        setErrorMessage(`Error al obtener horarios: ${schedError.message}`);
+        setError(`Error al obtener horarios: ${schedError.message}`);
       }
       if (staffError) {
-        console.error('Error fetching staff:', staffError.message);
-        setErrorMessage(`Error al obtener personal: ${staffError.message}`);
+        setError(`Error al obtener personal: ${staffError.message}`);
       }
-      if (sched) {
-        console.log('Horarios cargados:', sched);
-        setSchedule(sched);
-      }
-      if (staff) {
-        console.log('Personal cargado:', staff);
-        setExternalStaff(staff);
-      }
+      if (sched) setSchedule(sched);
+      if (staff) setExternalStaff(staff);
     };
 
     fetchData();
-  }, [eventId, isAuthenticated]);
+  }, [eventId]);
 
-  const handleAddOrEditSchedule = () => {
-    if (!title || !time || !eventId || !isAuthenticated) {
-      const msg = 'Faltan datos: ' + (!title ? 'título, ' : '') + (!time ? 'hora, ' : '') + (!eventId ? 'ID del evento, ' : '') + (!isAuthenticated ? 'autenticación' : '');
-      console.error('Error en handleAddOrEditSchedule:', msg);
-      setErrorMessage(msg);
+  const isBlocked = eventoEstado === 'inactivo' && (!userId || userId !== organizadorId);
+
+  const handleAddOrEditSchedule = async () => {
+    if (isBlocked) {
+      setModalMessage('El evento está inactivo. No podés realizar modificaciones.');
       return;
     }
 
+    if (!title.trim() || !time) {
+      setScheduleError('Completá todos los campos.');
+      return;
+    }
+
+    setScheduleError(null);
+
     if (editingScheduleId !== null) {
-      console.log('Editando horario en estado:', { id: editingScheduleId, title, time });
-      setSchedule(prev =>
-        prev.map(block =>
-          block.id === editingScheduleId ? { ...block, title, time } : block
-        )
-      );
+      const { error } = await supabase
+        .from('schedule_blocks')
+        .update({ title, time })
+        .eq('id', editingScheduleId)
+        .eq('user_id', String(eventId));
+      if (!error) {
+        setSchedule(prev =>
+          prev.map(block =>
+            block.id === editingScheduleId ? { ...block, title, time } : block
+          )
+        );
+      } else {
+        setError(`Error al actualizar horario: ${error.message}`);
+      }
     } else {
       const newBlock = { id: idGen.current(), title, time, user_id: String(eventId) };
-      console.log('Agregando horario a estado:', newBlock);
-      setSchedule(prev => [...prev, newBlock]);
+      const { error } = await supabase.from('schedule_blocks').insert([newBlock]);
+      if (!error) {
+        setSchedule(prev => [...prev, newBlock]);
+      } else {
+        setError(`Error al agregar horario: ${error.message}`);
+      }
     }
 
     setTitle('');
     setTime('');
     setEditingScheduleId(null);
-    setErrorMessage(null);
   };
 
-  const handleAddOrEditStaff = () => {
-    if (!name || !role || !contact || !eventId || !isAuthenticated) {
-      const msg = 'Faltan datos: ' + (!name ? 'nombre, ' : '') + (!role ? 'rol, ' : '') + (!contact ? 'contacto, ' : '') + (!eventId ? 'ID del evento, ' : '') + (!isAuthenticated ? 'autenticación' : '');
-      console.error('Error en handleAddOrEditStaff:', msg);
-      setErrorMessage(msg);
+  const handleAddOrEditStaff = async () => {
+    if (isBlocked) {
+      setModalMessage('El evento está inactivo. No podés realizar modificaciones.');
       return;
     }
 
+    if (!name.trim() || !role.trim() || !contact.trim()) {
+      setStaffError('Completá todos los campos.');
+      return;
+    }
+
+    setStaffError(null);
+
     if (editingStaffId !== null) {
-      console.log('Editando personal en estado:', { id: editingStaffId, name, role, contact });
-      setExternalStaff(prev =>
-        prev.map(staff =>
-          staff.id === editingStaffId ? { ...staff, name, role, contact } : staff
-        )
-      );
+      const { error } = await supabase
+        .from('external_staff')
+        .update({ name, role, contact })
+        .eq('id', editingStaffId)
+        .eq('user_id', String(eventId));
+      if (!error) {
+        setExternalStaff(prev =>
+          prev.map(staff =>
+            staff.id === editingStaffId ? { ...staff, name, role, contact } : staff
+          )
+        );
+      } else {
+        setError(`Error al actualizar colaborador: ${error.message}`);
+      }
     } else {
       const newStaff = { id: idGen.current(), name, role, contact, user_id: String(eventId) };
-      console.log('Agregando personal a estado:', newStaff);
-      setExternalStaff(prev => [...prev, newStaff]);
+      const { error } = await supabase.from('external_staff').insert([newStaff]);
+      if (!error) {
+        setExternalStaff(prev => [...prev, newStaff]);
+      } else {
+        setError(`Error al agregar colaborador: ${error.message}`);
+      }
     }
 
     setName('');
     setRole('');
     setContact('');
     setEditingStaffId(null);
-    setErrorMessage(null);
   };
 
   const handleDeleteSchedule = async (id: string) => {
-    if (!eventId || !isAuthenticated) {
-      console.error('Error en handleDeleteSchedule: No hay ID de evento o autenticación');
-      setErrorMessage('No hay ID de evento o autenticación para eliminar');
+    if (isBlocked) {
+      setModalMessage('El evento está inactivo. No podés realizar modificaciones.');
       return;
     }
-    console.log('Eliminando horario:', { id, user_id: String(eventId) });
+    if (!eventId) {
+      setError('No hay ID de evento para eliminar');
+      return;
+    }
+
     const { error } = await supabase
       .from('schedule_blocks')
       .delete()
       .eq('id', id)
       .eq('user_id', String(eventId));
 
-    if (error) {
-      console.error('Error deleting schedule:', error.message);
-      setErrorMessage(`Error al eliminar horario: ${error.message}`);
-      return;
+    if (!error) {
+      setSchedule(prev => prev.filter(b => b.id !== id));
+    } else {
+      setError(`Error al eliminar horario: ${error.message}`);
     }
-
-    setSchedule(prev => prev.filter(b => b.id !== id));
-    setErrorMessage(null);
   };
 
   const handleDeleteStaff = async (id: string) => {
-    if (!eventId || !isAuthenticated) {
-      console.error('Error en handleDeleteStaff: No hay ID de evento o autenticación');
-      setErrorMessage('No hay ID de evento o autenticación para eliminar');
+    if (isBlocked) {
+      setModalMessage('El evento está inactivo. No podés realizar modificaciones.');
       return;
     }
-    console.log('Eliminando personal:', { id, user_id: String(eventId) });
+    if (!eventId) {
+      setError('No hay ID de evento para eliminar');
+      return;
+    }
+
     const { error } = await supabase
       .from('external_staff')
       .delete()
       .eq('id', id)
       .eq('user_id', String(eventId));
 
-    if (error) {
-      console.error('Error deleting staff:', error.message);
-      setErrorMessage(`Error al eliminar personal: ${error.message}`);
-      return;
+    if (!error) {
+      setExternalStaff(prev => prev.filter(s => s.id !== id));
+    } else {
+      setError(`Error al eliminar colaborador: ${error.message}`);
     }
-
-    setExternalStaff(prev => prev.filter(s => s.id !== id));
-    setErrorMessage(null);
   };
 
   const handleFinalize = async () => {
+    if (isBlocked) {
+      setModalMessage('El evento está inactivo. No podés realizar modificaciones.');
+      return;
+    }
+
     const params = new URLSearchParams(location.search);
     const tokenParam = params.get('token');
-    if (!eventId || !isAuthenticated || !tokenParam) {
-      console.error('Error en handleFinalize: Faltan datos', { eventId, isAuthenticated, token: tokenParam });
-      setErrorMessage('No hay ID de evento, autenticación o token para finalizar');
+    if (!eventId || !tokenParam) {
+      setError('No hay datos suficientes para finalizar');
       return;
     }
 
     if (schedule.length === 0) {
-      setErrorMessage('Debes agregar al menos un horario antes de finalizar');
+      setError('Debes agregar al menos un horario antes de finalizar');
       return;
     }
 
-    console.log('Finalizando evento, guardando:', { schedule, externalStaff });
-
-    // Limpiar datos previos para evitar conflictos
-    console.log('Eliminando datos previos para eventId:', eventId);
     await supabase.from('schedule_blocks').delete().eq('user_id', String(eventId));
     await supabase.from('external_staff').delete().eq('user_id', String(eventId));
 
-    // Guardar horarios
     if (schedule.length > 0) {
-      console.log('Insertando horarios en Supabase:', schedule);
       const { error } = await supabase.from('schedule_blocks').insert(
         schedule.map(block => ({
           id: block.id,
@@ -268,15 +319,12 @@ const EventSchedule: React.FC = () => {
         }))
       );
       if (error) {
-        console.error('Error al guardar horarios:', error.message);
-        setErrorMessage(`Error al guardar horarios: ${error.message}`);
+        setError(`Error al guardar horarios: ${error.message}`);
         return;
       }
     }
 
-    // Guardar personal
     if (externalStaff.length > 0) {
-      console.log('Insertando personal en Supabase:', externalStaff);
       const { error } = await supabase.from('external_staff').insert(
         externalStaff.map(staff => ({
           id: staff.id,
@@ -287,61 +335,97 @@ const EventSchedule: React.FC = () => {
         }))
       );
       if (error) {
-        console.error('Error al guardar personal:', error.message);
-        setErrorMessage(`Error al guardar personal: ${error.message}`);
+        setError(`Error al guardar personal: ${error.message}`);
         return;
       }
     }
 
-    console.log('Datos guardados correctamente');
     if (eventType?.toLowerCase() === 'fiesta15') {
-      console.log('Redirigiendo a /invitados con token:', tokenParam);
       navigate(`/invitados?token=${tokenParam}`);
     } else {
-      console.log('Redirigiendo a /thank-you con token:', tokenParam);
       navigate(`/thank-you?token=${tokenParam}`);
     }
   };
 
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center bg-white">
+      <div className="text-center text-gray-700 text-xl">Cargando...</div>
+    </div>
+  );
+
+  if (error) return (
+    <div className="min-h-screen flex items-center justify-center bg-white">
+      <div className="text-center text-red-500 text-xl">{error}</div>
+    </div>
+  );
+
   return (
-    <div className="container mx-auto px-4 py-8 bg-white">
+    <div className="container mx-auto px-4 py-8 bg-white" style={{ pointerEvents: isBlocked ? 'none' : 'auto' }}>
+      {modalMessage && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" style={{ pointerEvents: 'auto' }}>
+          <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">Atención</h3>
+            <p className="text-gray-600 mb-6">{modalMessage}</p>
+            <button
+              className="bg-[#FF6B35] text-white px-4 py-2 rounded-md hover:bg-[#FF6B35]/90 w-full transition-colors"
+              onClick={() => setModalMessage(null)}
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
+      )}
+      {isBlocked && !modalMessage && (
+        <div className="fixed inset-0 z-40 bg-transparent" />
+      )}
       <h1 className="text-3xl font-bold text-gray-800 mb-6 text-center">
         Organizador del Evento
       </h1>
-      {errorMessage && (
+      {error && (
         <div className="max-w-2xl mx-auto bg-red-100 text-red-800 p-4 rounded-md mb-4">
-          {errorMessage}
+          {error}
         </div>
       )}
-
-      {/* Bloque horario */}
       <div className="max-w-2xl mx-auto bg-white rounded-lg shadow-md p-6 mb-8">
         <h2 className="text-xl font-semibold mb-4">{editingScheduleId ? 'Editar bloque horario' : 'Agregar nuevo horario'}</h2>
+        <p className="text-sm text-gray-800 font-bold mb-4">
+          "Agendá solo lo esencial (evento aprox. 8 horas): recepción, civil, cena, brindis, vals, torta, baile y final."
+        </p>
         <div className="flex flex-col gap-4">
           <input
             type="text"
-            className="border px-4 py-2 rounded-md"
+            className={`border px-4 py-2 rounded-md ${isBlocked ? 'opacity-50 cursor-not-allowed' : ''}`}
             placeholder="Ej: Llegada de invitados"
             value={title}
-            onChange={e => setTitle(e.target.value)}
+            onChange={e => !isBlocked && setTitle(e.target.value)}
+            disabled={isBlocked}
           />
           <input
             type="time"
-            className="border px-4 py-2 rounded-md"
+            className={`border px-4 py-2 rounded-md ${isBlocked ? 'opacity-50 cursor-not-allowed' : ''}`}
             value={time}
-            onChange={e => setTime(e.target.value)}
+            onChange={e => !isBlocked && setTime(e.target.value)}
+            disabled={isBlocked}
           />
           <button
-            onClick={handleAddOrEditSchedule}
-            className="bg-[#FF6B35] text-white px-4 py-2 rounded-md hover:bg-[#FF6B35]/90 flex items-center justify-center"
-            disabled={!eventId || !isAuthenticated}
+            onClick={() => {
+              if (isBlocked) {
+                setModalMessage('El evento está inactivo. No podés realizar modificaciones.');
+                return;
+              }
+              handleAddOrEditSchedule();
+            }}
+            className={`bg-[#FF6B35] text-white px-4 py-2 rounded-md hover:bg-[#FF6B35]/90 flex items-center justify-center ${isBlocked ? 'opacity-50 cursor-not-allowed' : ''}`}
+            disabled={isBlocked}
           >
             <Plus className="w-4 h-4 mr-2" />
             {editingScheduleId ? 'Guardar cambios' : 'Agregar horario'}
           </button>
+          {scheduleError && (
+            <p className="text-red-500 text-sm">{scheduleError}</p>
+          )}
         </div>
       </div>
-
       <div className="max-w-2xl mx-auto bg-white rounded-lg shadow-md p-6 mb-8">
         <h2 className="text-xl font-semibold mb-4">Horarios Programados</h2>
         {schedule.length === 0 ? (
@@ -357,19 +441,29 @@ const EventSchedule: React.FC = () => {
                 <div className="flex gap-2">
                   <button
                     onClick={() => {
+                      if (isBlocked) {
+                        setModalMessage('El evento está inactivo. No podés realizar modificaciones.');
+                        return;
+                      }
                       setTitle(block.title);
                       setTime(block.time);
                       setEditingScheduleId(block.id);
                     }}
-                    className="text-blue-600"
-                    disabled={!isAuthenticated}
+                    className={`text-blue-600 ${isBlocked ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    disabled={isBlocked}
                   >
                     <Pencil className="w-4 h-4" />
                   </button>
                   <button
-                    onClick={() => handleDeleteSchedule(block.id)}
-                    className="text-red-600"
-                    disabled={!isAuthenticated}
+                    onClick={() => {
+                      if (isBlocked) {
+                        setModalMessage('El evento está inactivo. No podés realizar modificaciones.');
+                        return;
+                      }
+                      handleDeleteSchedule(block.id);
+                    }}
+                    className={`text-red-600 ${isBlocked ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    disabled={isBlocked}
                   >
                     <Trash className="w-4 h-4" />
                   </button>
@@ -379,43 +473,52 @@ const EventSchedule: React.FC = () => {
           </ul>
         )}
       </div>
-
-      {/* Colaboradores externos */}
       <div className="max-w-2xl mx-auto bg-white rounded-lg shadow-md p-6 mb-8">
         <h2 className="text-xl font-semibold mb-4">{editingStaffId ? 'Editar colaborador externo' : 'Agregar colaborador externo'}</h2>
         <div className="flex flex-col gap-4">
           <input
             type="text"
-            className="border px-4 py-2 rounded-md"
+            className={`border px-4 py-2 rounded-md ${isBlocked ? 'opacity-50 cursor-not-allowed' : ''}`}
             placeholder="Nombre"
             value={name}
-            onChange={e => setName(e.target.value)}
+            onChange={e => !isBlocked && setName(e.target.value)}
+            disabled={isBlocked}
           />
           <input
             type="text"
-            className="border px-4 py-2 rounded-md"
+            className={`border px-4 py-2 rounded-md ${isBlocked ? 'opacity-50 cursor-not-allowed' : ''}`}
             placeholder="Rol"
             value={role}
-            onChange={e => setRole(e.target.value)}
+            onChange={e => !isBlocked && setRole(e.target.value)}
+            disabled={isBlocked}
           />
           <input
             type="text"
-            className="border px-4 py-2 rounded-md"
+            className={`border px-4 py-2 rounded-md ${isBlocked ? 'opacity-50 cursor-not-allowed' : ''}`}
             placeholder="Contacto"
             value={contact}
-            onChange={e => setContact(e.target.value)}
+            onChange={e => !isBlocked && setContact(e.target.value)}
+            disabled={isBlocked}
           />
           <button
-            onClick={handleAddOrEditStaff}
-            className="bg-[#FF6B35] text-white px-4 py-2 rounded-md hover:bg-[#FF6B35]/90 flex items-center justify-center"
-            disabled={!eventId || !isAuthenticated}
+            onClick={() => {
+              if (isBlocked) {
+                setModalMessage('El evento está inactivo. No podés realizar modificaciones.');
+                return;
+              }
+              handleAddOrEditStaff();
+            }}
+            className={`bg-[#FF6B35] text-white px-4 py-2 rounded-md hover:bg-[#FF6B35]/90 flex items-center justify-center ${isBlocked ? 'opacity-50 cursor-not-allowed' : ''}`}
+            disabled={isBlocked}
           >
             <Plus className="w-4 h-4 mr-2" />
             {editingStaffId ? 'Guardar cambios' : 'Agregar colaborador'}
           </button>
+          {staffError && (
+            <p className="text-red-500 text-sm">{staffError}</p>
+          )}
         </div>
       </div>
-
       <div className="max-w-2xl mx-auto bg-white rounded-lg shadow-md p-6 mb-8">
         <h2 className="text-xl font-semibold mb-4">Colaboradores Externos</h2>
         {externalStaff.length === 0 ? (
@@ -431,20 +534,30 @@ const EventSchedule: React.FC = () => {
                 <div className="flex gap-2">
                   <button
                     onClick={() => {
+                      if (isBlocked) {
+                        setModalMessage('El evento está inactivo. No podés realizar modificaciones.');
+                        return;
+                      }
                       setName(staff.name);
                       setRole(staff.role);
                       setContact(staff.contact);
                       setEditingStaffId(staff.id);
                     }}
-                    className="text-blue-600"
-                    disabled={!isAuthenticated}
+                    className={`text-blue-600 ${isBlocked ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    disabled={isBlocked}
                   >
                     <Pencil className="w-4 h-4" />
                   </button>
                   <button
-                    onClick={() => handleDeleteStaff(staff.id)}
-                    className="text-red-600"
-                    disabled={!isAuthenticated}
+                    onClick={() => {
+                      if (isBlocked) {
+                        setModalMessage('El evento está inactivo. No podés realizar modificaciones.');
+                        return;
+                      }
+                      handleDeleteStaff(staff.id);
+                    }}
+                    className={`text-red-600 ${isBlocked ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    disabled={isBlocked}
                   >
                     <Trash className="w-4 h-4" />
                   </button>
@@ -454,12 +567,17 @@ const EventSchedule: React.FC = () => {
           </ul>
         )}
       </div>
-
       <div className="max-w-2xl mx-auto">
         <button
-          onClick={handleFinalize}
-          className="bg-[#FF6B35] text-white px-6 py-3 rounded-md hover:bg-[#FF6B35]/90 w-full"
-          disabled={!eventId || !isAuthenticated}
+          onClick={() => {
+            if (isBlocked) {
+              setModalMessage('El evento está inactivo. No podés realizar modificaciones.');
+              return;
+            }
+            handleFinalize();
+          }}
+          className={`bg-[#FF6B35] text-white px-6 py-3 rounded-md w-full hover:bg-[#FF6B35]/90 transition-colors ${isBlocked ? 'opacity-50 cursor-not-allowed' : ''}`}
+          disabled={isBlocked}
         >
           Finalizar
         </button>

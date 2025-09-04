@@ -7,43 +7,34 @@ import { useUserContext } from '../hooks/useUserContext';
 const Header: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { menuSeleccionado, token, setToken } = useUserContext();
+  const { menuSeleccionado, token, setToken, setMenuSeleccionado } = useUserContext();
   const [logueado, setLogueado] = useState(false);
   const [mostrarInvitados, setMostrarInvitados] = useState(false);
 
-  // Obtener el token de la URL
   const urlToken = new URLSearchParams(location.search).get('token');
 
+  // Efecto para persistir el token y el menú seleccionado
   useEffect(() => {
-    // Persistir el token en el contexto
-    if (urlToken && token !== urlToken) {
-      console.log('Header.tsx - Persistiendo token:', { token, urlToken });
-      setToken(urlToken);
-    }
-  }, [urlToken, token, setToken]);
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setLogueado(!!data.session?.user);
-    });
-
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setLogueado(!!session?.user);
-    });
-
-    return () => {
-      listener?.subscription.unsubscribe();
-    };
-  }, []);
-
-  useEffect(() => {
-    const verificarTipo = async () => {
-      const activeToken = token || urlToken;
+    const fetchEventData = async () => {
+      const activeToken = urlToken || token;
       if (!activeToken) {
-        console.error('No se proporcionó un token válido.');
         return;
       }
 
+      // Persiste el token en el contexto
+      if (urlToken && token !== urlToken) {
+        console.log('Header.tsx - Persistiendo token:', { token, urlToken });
+        setToken(urlToken);
+      }
+
+      // Intenta determinar el tipo de menú basándose en la URL
+      const pathSegments = location.pathname.split('/');
+      const pathMenu = pathSegments.find(segment => segment.startsWith('menu'));
+      if (pathMenu && menuSeleccionado !== pathMenu) {
+        setMenuSeleccionado(pathMenu);
+      }
+
+      // Verifica el tipo de evento para el enlace de invitados
       const { data, error } = await supabase
         .from('eventos')
         .select('tipo')
@@ -60,8 +51,22 @@ const Header: React.FC = () => {
       }
     };
 
-    verificarTipo();
-  }, [token, urlToken]);
+    fetchEventData();
+  }, [urlToken, token, setToken, location.pathname, menuSeleccionado, setMenuSeleccionado]);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setLogueado(!!data.session?.user);
+    });
+
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setLogueado(!!session?.user);
+    });
+
+    return () => {
+      listener?.subscription.unsubscribe();
+    };
+  }, []);
 
   const cerrarSesion = async () => {
     await supabase.auth.signOut();
@@ -69,23 +74,18 @@ const Header: React.FC = () => {
   };
 
   const handleMesasClick = (e: React.MouseEvent) => {
-    const activeToken = token || urlToken;
-    if (!activeToken) {
-      e.preventDefault();
-      alert('No se proporcionó un token válido.');
-      return;
-    }
     if (!menuSeleccionado || menuSeleccionado === 'menu4') {
       e.preventDefault();
-      alert('Primero debes elegir el menú para pasar a mesas.');
-      return;
+      alert('Primero debes elegir un menú de cena para organizar las mesas.');
     }
   };
 
   if (location.pathname.includes('/organizador/panel') || location.pathname.startsWith('/auth')) return null;
 
-  // Usar token del contexto o de la URL
   const navToken = token || urlToken;
+  const getPathWithToken = (path: string) => {
+    return navToken ? `${path}?token=${navToken}` : path;
+  };
 
   return (
     <header className="bg-[#FF6B35] text-white shadow-md">
@@ -111,11 +111,9 @@ const Header: React.FC = () => {
             <ul className="flex justify-around md:space-x-8">
               <li>
                 <NavLink
-                  to={navToken ? `/cliente?token=${navToken}` : '/cliente'}
+                  to={getPathWithToken('/cliente')}
                   className={({ isActive }) =>
-                    `flex flex-col items-center transition-colors ${
-                      isActive ? 'text-white font-medium' : 'text-white/90 hover:text-white'
-                    }`
+                    `flex flex-col items-center transition-colors ${isActive ? 'text-white font-medium' : 'text-white/90 hover:text-white'}`
                   }
                 >
                   <Home className="h-5 w-5" />
@@ -124,11 +122,9 @@ const Header: React.FC = () => {
               </li>
               <li>
                 <NavLink
-                  to={navToken ? `/catering?token=${navToken}` : '/catering'}
+                  to={getPathWithToken('/catering')}
                   className={({ isActive }) =>
-                    `flex flex-col items-center transition-colors ${
-                      isActive ? 'text-white font-medium' : 'text-white/90 hover:text-white'
-                    }`
+                    `flex flex-col items-center transition-colors ${isActive ? 'text-white font-medium' : 'text-white/90 hover:text-white'}`
                   }
                 >
                   <Utensils className="h-5 w-5" />
@@ -138,11 +134,9 @@ const Header: React.FC = () => {
               {menuSeleccionado !== 'menu4' && (
                 <li>
                   <NavLink
-                    to={navToken ? `/mesa?token=${navToken}` : '/mesa'}
+                    to={getPathWithToken('/mesa')}
                     className={({ isActive }) =>
-                      `flex flex-col items-center transition-colors ${
-                        isActive ? 'text-white font-medium' : 'text-white/90 hover:text-white'
-                      }`
+                      `flex flex-col items-center transition-colors ${isActive ? 'text-white font-medium' : 'text-white/90 hover:text-white'}`
                     }
                     onClick={handleMesasClick}
                   >
@@ -151,13 +145,24 @@ const Header: React.FC = () => {
                   </NavLink>
                 </li>
               )}
+              {menuSeleccionado === 'menu4' && (
+                <li>
+                  <NavLink
+                    to={getPathWithToken('/invitados-cena')}
+                    className={({ isActive }) =>
+                      `flex flex-col items-center transition-colors ${isActive ? 'text-white font-medium' : 'text-white/90 hover:text-white'}`
+                    }
+                  >
+                    <Users className="h-5 w-5" />
+                    <span className="text-xs mt-1">Cena</span>
+                  </NavLink>
+                </li>
+              )}
               <li>
                 <NavLink
-                  to={navToken ? `/horarios?token=${navToken}` : '/horarios'}
+                  to={getPathWithToken('/horarios')}
                   className={({ isActive }) =>
-                    `flex flex-col items-center transition-colors ${
-                      isActive ? 'text-white font-medium' : 'text-white/90 hover:text-white'
-                    }`
+                    `flex flex-col items-center transition-colors ${isActive ? 'text-white font-medium' : 'text-white/90 hover:text-white'}`
                   }
                 >
                   <Calendar className="h-5 w-5" />
@@ -167,15 +172,13 @@ const Header: React.FC = () => {
               {mostrarInvitados && (
                 <li>
                   <NavLink
-                    to={navToken ? `/invitados?token=${navToken}` : '/invitados'}
+                    to={getPathWithToken('/invitados')}
                     className={({ isActive }) =>
-                      `flex flex-col items-center transition-colors ${
-                        isActive ? 'text-white font-medium' : 'text-white/90 hover:text-white'
-                      }`
+                      `flex flex-col items-center transition-colors ${isActive ? 'text-white font-medium' : 'text-white/90 hover:text-white'}`
                     }
                   >
                     <Users className="h-5 w-5" />
-                    <span className="text-xs mt-1">Invitados</span>
+                    <span className="text-xs mt-1">Baile</span>
                   </NavLink>
                 </li>
               )}

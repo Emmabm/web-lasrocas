@@ -37,12 +37,18 @@ const DessertSelectionMenu1: React.FC = () => {
 
       const { data, error } = await supabase
         .from('eventos')
-        .select('id')
+        .select('id, estado')
         .eq('token_acceso', finalToken)
         .single();
 
       if (error || !data) {
         setError('Error al cargar el evento');
+        setLoading(false);
+        return;
+      }
+
+      if (data.estado === 'inactivo') {
+        setError('El evento está inactivo. No podés realizar modificaciones.');
         setLoading(false);
         return;
       }
@@ -62,6 +68,22 @@ const DessertSelectionMenu1: React.FC = () => {
 
     if (!eventId) {
       setError('No se encontró el ID del evento');
+      return;
+    }
+
+    const { data: eventData, error: eventError } = await supabase
+      .from('eventos')
+      .select('estado')
+      .eq('id', eventId)
+      .single();
+
+    if (eventError || !eventData) {
+      setError('Error al cargar el evento');
+      return;
+    }
+
+    if (eventData.estado === 'inactivo') {
+      setError('El evento está inactivo. No podés realizar modificaciones.');
       return;
     }
 
@@ -108,19 +130,42 @@ const DessertSelectionMenu1: React.FC = () => {
         <p className="text-center text-gray-600 text-lg mb-8">
           Elegí <span className="text-[#FF6B35] font-semibold">1 postre</span> para tu evento.
         </p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          {postres.map((item) => (
-            <div
-              key={item}
-              onClick={() => setPostre(item)}
-              className={`p-6 rounded-xl border-2 text-center cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ${
-                postre === item ? 'border-[#FF6B35] bg-orange-50' : 'border-gray-200'
-              }`}
-            >
-              <p className="text-base font-medium text-gray-800">{item}</p>
+
+        <section className="mb-12">
+          <h2 className="text-2xl font-semibold text-gray-800 mb-6">🌟 Recomendación de la casa</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="rounded-xl border-2 border-gray-200 overflow-hidden">
+              <img 
+                src="/public/img/platos/helado-chocolate-limon.webp" 
+                alt="Helado de chocolate y limón" 
+                className="w-full h-48 object-cover" 
+              />
+              <div className="p-4 space-y-1">
+                <h3 className="font-semibold text-lg text-gray-800">
+                  Helado de chocolate y limón cocado relleno de dulce de leche, con base de chocolate
+                </h3>
+              </div>
             </div>
-          ))}
-        </div>
+          </div>
+        </section>
+
+        <section className="mb-12">
+          <h2 className="text-2xl font-semibold text-gray-800 mb-6">🍨 Postres</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {postres.map((item) => (
+              <div
+                key={item}
+                onClick={() => setPostre(item)}
+                className={`p-6 rounded-xl border-2 text-center cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ${
+                  postre === item ? 'border-[#FF6B35] bg-orange-50' : 'border-gray-200'
+                }`}
+              >
+                <p className="text-base font-medium text-gray-800">{item}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
         <div className="flex justify-center gap-4">
           <button
             onClick={volver}

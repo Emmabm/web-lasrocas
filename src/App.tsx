@@ -10,6 +10,7 @@ import GuestsWrapper from './pages/cliente/invitados/GuestsWrapper';
 import EventoPage from './pages/evento/[token]';
 import RequireAuth from './components/RequireAuth';
 import ThankYou from './pages/cliente/gracias/ThankYou';
+import InvitadosCena from './pages/cliente/cena/InvitadosCena';
 // Catering
 import Catering from './pages/cliente/catering/Catering';
 import ReceptionSelectionMenu1 from './pages/cliente/catering/menu1/ReceptionSelectionMenu1';
@@ -37,6 +38,7 @@ import CateringResumenOrganizador from './pages/organizador/CateringResumenOrgan
 import MesasResumenOrganizador from './pages/organizador/MesasResumenOrganizador';
 import HorariosResumenOrganizador from './pages/organizador/HorariosResumenOrganizador';
 import InvitadosResumenOrganizador from './pages/organizador/InvitadosResumenOrganizador';
+import CenaResumenOrganizador from './pages/organizador/CenaResumenOrganizador';
 
 function App() {
   return (
@@ -68,8 +70,9 @@ function AppRoutes() {
 
             {/* Rutas generales */}
             <Route path="/mesa" element={<TablePlanner />} />
-            <Route path="/invitados" element={<GuestsWrapper />} />
+            <Route path="/invitados-cena" element={<InvitadosCena />} />
             <Route path="/horarios" element={<EventSchedule />} />
+            <Route path="/invitados" element={<GuestsWrapper />} />
 
             {/* Rutas protegidas por rol */}
             <Route
@@ -106,6 +109,16 @@ function AppRoutes() {
                 <RequireAuth allowedRoles={['organizador']}>
                   <OrganizadorPanelWrapper>
                     <MesasResumenOrganizador />
+                  </OrganizadorPanelWrapper>
+                </RequireAuth>
+              }
+            />
+             <Route
+              path="/organizador/evento/:id/cena"
+              element={
+                <RequireAuth allowedRoles={['organizador']}>
+                  <OrganizadorPanelWrapper>
+                    <CenaResumenOrganizador />
                   </OrganizadorPanelWrapper>
                 </RequireAuth>
               }
