@@ -77,6 +77,7 @@ const EventSchedule: React.FC = () => {
         setOrganizadorId(eventData.organizador_id);
         setEventoEstado(eventData.estado);
 
+        // Bloquear si el evento ya está inactivo al cargar la página
         if (eventData.estado === 'inactivo' && (!currentUserId || currentUserId !== eventData.organizador_id)) {
           setModalMessage('El evento está inactivo. No podés realizar modificaciones.');
         }
