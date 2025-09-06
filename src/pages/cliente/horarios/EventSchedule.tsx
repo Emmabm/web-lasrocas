@@ -8,7 +8,7 @@ interface ScheduleBlock {
   id: string;
   title: string;
   time: string;
-  user_id: string;
+  evento_id: string;
 }
 
 interface ExternalStaff {
@@ -16,7 +16,7 @@ interface ExternalStaff {
   name: string;
   role: string;
   contact: string;
-  user_id: string;
+  evento_id: string;
 }
 
 const EventSchedule: React.FC = () => {
@@ -126,11 +126,12 @@ const EventSchedule: React.FC = () => {
       const { data: sched, error: schedError } = await supabase
         .from('schedule_blocks')
         .select('*')
-        .eq('user_id', String(eventId));
+        .eq('evento_id', String(eventId));
+
       const { data: staff, error: staffError } = await supabase
         .from('external_staff')
         .select('*')
-        .eq('user_id', String(eventId));
+        .eq('evento_id', String(eventId));
 
       if (schedError) {
         setError(`Error al obtener horarios: ${schedError.message}`);
@@ -169,18 +170,18 @@ const EventSchedule: React.FC = () => {
         .from('schedule_blocks')
         .update({ title, time })
         .eq('id', editingScheduleId)
-        .eq('user_id', String(eventId));
+        .eq('evento_id', String(eventId));
       if (!error) {
         setSchedule(prev =>
           prev.map(block =>
             block.id === editingScheduleId ? { ...block, title, time } : block
-          )
+          ) as ScheduleBlock[]
         );
       } else {
         setError(`Error al actualizar horario: ${error.message}`);
       }
     } else {
-      const newBlock = { id: idGen.current(), title, time, user_id: String(eventId) };
+      const newBlock = { id: idGen.current(), title, time, evento_id: String(eventId) };
       const { error } = await supabase.from('schedule_blocks').insert([newBlock]);
       if (!error) {
         setSchedule(prev => [...prev, newBlock]);
@@ -212,18 +213,18 @@ const EventSchedule: React.FC = () => {
         .from('external_staff')
         .update({ name, role, contact })
         .eq('id', editingStaffId)
-        .eq('user_id', String(eventId));
+        .eq('evento_id', String(eventId));
       if (!error) {
         setExternalStaff(prev =>
           prev.map(staff =>
             staff.id === editingStaffId ? { ...staff, name, role, contact } : staff
-          )
+          ) as ExternalStaff[]
         );
       } else {
         setError(`Error al actualizar colaborador: ${error.message}`);
       }
     } else {
-      const newStaff = { id: idGen.current(), name, role, contact, user_id: String(eventId) };
+      const newStaff = { id: idGen.current(), name, role, contact, evento_id: String(eventId) };
       const { error } = await supabase.from('external_staff').insert([newStaff]);
       if (!error) {
         setExternalStaff(prev => [...prev, newStaff]);
@@ -252,7 +253,7 @@ const EventSchedule: React.FC = () => {
       .from('schedule_blocks')
       .delete()
       .eq('id', id)
-      .eq('user_id', String(eventId));
+      .eq('evento_id', String(eventId));
 
     if (!error) {
       setSchedule(prev => prev.filter(b => b.id !== id));
@@ -275,7 +276,7 @@ const EventSchedule: React.FC = () => {
       .from('external_staff')
       .delete()
       .eq('id', id)
-      .eq('user_id', String(eventId));
+      .eq('evento_id', String(eventId));
 
     if (!error) {
       setExternalStaff(prev => prev.filter(s => s.id !== id));
@@ -302,8 +303,8 @@ const EventSchedule: React.FC = () => {
       return;
     }
 
-    await supabase.from('schedule_blocks').delete().eq('user_id', String(eventId));
-    await supabase.from('external_staff').delete().eq('user_id', String(eventId));
+    await supabase.from('schedule_blocks').delete().eq('evento_id', String(eventId));
+    await supabase.from('external_staff').delete().eq('evento_id', String(eventId));
 
     if (schedule.length > 0) {
       const { error } = await supabase.from('schedule_blocks').insert(
@@ -311,7 +312,7 @@ const EventSchedule: React.FC = () => {
           id: block.id,
           title: block.title,
           time: block.time,
-          user_id: String(eventId),
+          evento_id: String(eventId),
         }))
       );
       if (error) {
@@ -327,7 +328,7 @@ const EventSchedule: React.FC = () => {
           name: staff.name,
           role: staff.role,
           contact: staff.contact,
-          user_id: String(eventId),
+          evento_id: String(eventId),
         }))
       );
       if (error) {
