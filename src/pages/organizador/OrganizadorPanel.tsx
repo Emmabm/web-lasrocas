@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Pencil, Trash2, Copy, CheckCircle, XCircle } from 'lucide-react';
 import { supabase } from '../../supabaseClient';
 import { useNavigate } from 'react-router-dom';
+import { User } from '@supabase/supabase-js';
 
 const tiposValidos = ['fiesta15', 'casamiento', 'cumpleaños', 'egresados'];
 
@@ -11,16 +12,32 @@ export default function OrganizadorPanel() {
   const [nombreNuevo, setNombreNuevo] = useState('');
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [nombreEditado, setNombreEditado] = useState('');
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
+  // Listener para el estado de autenticación
+  useEffect(() => {
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      (_, session) => {
+        if (!session) {
+          navigate('/auth');
+        } else {
+          setUser(session.user);
+        }
+        setLoading(false);
+      }
+    );
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, [navigate]);
+
+  // Cargar eventos una vez que el usuario esté disponible
   useEffect(() => {
     const fetchEventos = async () => {
-      const { data: session } = await supabase.auth.getSession();
-      const user = session?.session?.user;
-      if (!user) {
-        navigate('/auth');
-        return;
-      }
+      if (!user) return;
 
       const { data: usuario } = await supabase
         .from('usuarios')
@@ -37,7 +54,7 @@ export default function OrganizadorPanel() {
           },
         ]);
       } else if (usuario.rol !== 'organizador') {
-        alert('Acceso denegado');
+        console.error('Acceso denegado');
         navigate('/');
         return;
       }
@@ -50,31 +67,31 @@ export default function OrganizadorPanel() {
 
       if (error) {
         console.error('Error al cargar eventos:', error.message);
-        alert(`Error al cargar eventos: ${error.message}`);
+        console.error(`Error al cargar eventos: ${error.message}`);
         return;
       }
       setEventos(data || []);
     };
 
-    fetchEventos();
-  }, [navigate]);
+    if (user) {
+      fetchEventos();
+    }
+  }, [user, navigate]);
 
   const crearEvento = async () => {
     if (!tipoNuevo || !nombreNuevo) {
-      alert('Por favor, completa todos los campos');
+      console.error('Por favor, completa todos los campos');
       return;
     }
 
     const tipoValido = tiposValidos.includes(tipoNuevo.toLowerCase());
     if (!tipoValido) {
-      alert('Tipo de evento inválido');
+      console.error('Tipo de evento inválido');
       return;
     }
 
-    const { data: session } = await supabase.auth.getSession();
-    const user = session?.session?.user;
     if (!user?.id) {
-      alert('Usuario no identificado');
+      console.error('Usuario no identificado');
       return;
     }
 
@@ -93,14 +110,14 @@ export default function OrganizadorPanel() {
           nombre: nombreNuevo,
           token_acceso: token,
           organizador_id: user.id,
-          estado: 'activo', // Cambiado de 'pendiente' a 'activo' por defecto
+          estado: 'activo',
         },
       ])
       .select();
 
     if (error) {
       console.error('Error al crear evento:', error);
-      alert(`No se pudo crear el evento: ${error.message}`);
+      console.error(`No se pudo crear el evento: ${error.message}`);
       return;
     }
 
@@ -109,17 +126,18 @@ export default function OrganizadorPanel() {
     setNombreNuevo('');
 
     const clientLink = `${window.location.origin}/cliente?token=${token}`;
-    if (
-      window.confirm(`✅ Evento creado\n\nToken generado:\n${token}\n\n¿Copiar al portapapeles?`)
-    ) {
-      await navigator.clipboard.writeText(clientLink);
-      alert('📋 Token copiado.');
-    }
+    console.log(`✅ Evento creado\n\nToken generado:\n${token}\n\nLink para el cliente:\n${clientLink}`);
+    await navigator.clipboard.writeText(clientLink);
+    console.log('📋 Link copiado al portapapeles.');
   };
 
   const copiarLink = async (token: string) => {
-    await navigator.clipboard.writeText(`${window.location.origin}/cliente?token=${token}`);
-    alert('✅ Link copiado');
+    try {
+      await navigator.clipboard.writeText(`${window.location.origin}/cliente?token=${token}`);
+      console.log('✅ Link copiado');
+    } catch (err) {
+      console.error('Error al copiar el link:', err);
+    }
   };
 
   const iniciarEdicion = (id: string, nombre: string) => {
@@ -135,15 +153,12 @@ export default function OrganizadorPanel() {
   const guardarCambios = async (id: string) => {
     try {
       if (!nombreEditado.trim()) {
-        alert('El nombre no puede estar vacío');
+        console.error('El nombre no puede estar vacío');
         return;
       }
 
-      const sessionResponse = await supabase.auth.getSession();
-      const user = sessionResponse.data.session?.user;
       if (!user?.id) {
         console.error('No se encontró usuario autenticado');
-        alert('Error: No se encontró usuario autenticado');
         return;
       }
 
@@ -155,7 +170,7 @@ export default function OrganizadorPanel() {
 
       if (error) {
         console.error('Error al editar en Supabase:', error);
-        alert(`Error al editar: ${error.message}`);
+        console.error(`Error al editar: ${error.message}`);
         return;
       }
 
@@ -164,54 +179,54 @@ export default function OrganizadorPanel() {
       setNombreEditado('');
     } catch (err) {
       console.error('Error inesperado en guardarCambios:', err);
-      alert('Error inesperado al editar el evento');
+      console.error('Error inesperado al editar el evento');
     }
   };
 
   const eliminarEvento = async (id: string) => {
-    if (window.confirm('¿Estás seguro de eliminar este evento? Esta acción no se puede deshacer.')) {
-      const { error: errorSelecciones } = await supabase
-        .from('selecciones_evento')
-        .delete()
-        .eq('evento_id', id);
-      if (errorSelecciones) {
-        console.error('Error al eliminar selecciones_evento:', errorSelecciones);
-        alert(`Error al eliminar selecciones: ${errorSelecciones.message}`);
-        return;
-      }
+    console.log('¿Estás seguro de eliminar este evento? Esta acción no se puede deshacer.');
+    try {
+        const { error: errorSelecciones } = await supabase
+          .from('selecciones_evento')
+          .delete()
+          .eq('evento_id', id);
+        if (errorSelecciones) {
+          console.error('Error al eliminar selecciones_evento:', errorSelecciones);
+          console.error(`Error al eliminar selecciones: ${errorSelecciones.message}`);
+          return;
+        }
 
-      const { error: errorResumen } = await supabase
-        .from('eventos_resumen')
-        .delete()
-        .eq('event_id', id);
-      if (errorResumen) {
-        console.error('Error al eliminar eventos_resumen:', errorResumen);
-        alert(`Error al eliminar resumen: ${errorResumen.message}`);
-        return;
-      }
+        const { error: errorResumen } = await supabase
+          .from('eventos_resumen')
+          .delete()
+          .eq('event_id', id);
+        if (errorResumen) {
+          console.error('Error al eliminar eventos_resumen:', errorResumen);
+          console.error(`Error al eliminar resumen: ${errorResumen.message}`);
+          return;
+        }
 
-      const { error } = await supabase
-        .from('eventos')
-        .delete()
-        .eq('id', id)
-        .eq('organizador_id', (await supabase.auth.getSession()).data.session?.user?.id);
-      if (error) {
-        console.error('Error al eliminar evento:', error);
-        alert(`Error al eliminar evento: ${error.message}`);
-        return;
-      }
+        const { error } = await supabase
+          .from('eventos')
+          .delete()
+          .eq('id', id)
+          .eq('organizador_id', user?.id);
+        if (error) {
+          console.error('Error al eliminar evento:', error);
+          console.error(`Error al eliminar evento: ${error.message}`);
+          return;
+        }
 
-      setEventos(eventos.filter((e) => e.id !== id));
-    }
+        setEventos(eventos.filter((e) => e.id !== id));
+      } catch (err) {
+        console.error('Error inesperado al eliminar el evento:', err);
+      }
   };
 
   const toggleEventStatus = async (id: string, currentStatus: 'activo' | 'inactivo') => {
     try {
-      const sessionResponse = await supabase.auth.getSession();
-      const user = sessionResponse.data.session?.user;
       if (!user?.id) {
         console.error('No se encontró usuario autenticado');
-        alert('Error: No se encontró usuario autenticado');
         return;
       }
 
@@ -224,17 +239,25 @@ export default function OrganizadorPanel() {
 
       if (error) {
         console.error('Error al cambiar estado del evento:', error);
-        alert(`Error al cambiar estado: ${error.message}`);
+        console.error(`Error al cambiar estado: ${error.message}`);
         return;
       }
 
       setEventos(eventos.map((e) => (e.id === id ? { ...e, estado: newStatus } : e)));
-      alert(`Evento ${newStatus === 'activo' ? 'activado' : 'desactivado'} correctamente`);
+      console.log(`Evento ${newStatus === 'activo' ? 'activado' : 'desactivado'} correctamente`);
     } catch (err) {
       console.error('Error inesperado en toggleEventStatus:', err);
-      alert('Error inesperado al cambiar el estado del evento');
+      console.error('Error inesperado al cambiar el estado del evento');
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <p className="text-xl text-gray-700">Cargando...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
