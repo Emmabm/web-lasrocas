@@ -77,7 +77,6 @@ const EventSchedule: React.FC = () => {
         setOrganizadorId(eventData.organizador_id);
         setEventoEstado(eventData.estado);
 
-        // Bloquear si el evento ya está inactivo al cargar la página
         if (eventData.estado === 'inactivo' && (!currentUserId || currentUserId !== eventData.organizador_id)) {
           setModalMessage('El evento está inactivo. No podés realizar modificaciones.');
         }
@@ -97,31 +96,47 @@ const EventSchedule: React.FC = () => {
     verifyTokenAndFetchData();
   }, [location.search, setToken]);
 
+
+  // **NUEVA LÓGICA DE SINCRONIZACIÓN MÁS ROBUSTA**
   useEffect(() => {
     if (!eventId) return;
 
-    const subscription = supabase
-      .channel('eventos-channel')
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'eventos',
-          filter: `id=eq.${eventId}`,
-        },
-        (payload) => {
-          if (payload.new.estado !== eventoEstado) {
-            setEventoEstado(payload.new.estado);
-            if (payload.new.estado === 'inactivo' && (!userId || userId !== organizadorId)) {
-              setModalMessage('El evento está inactivo. No podés realizar modificaciones.');
-            } else if (payload.new.estado === 'activo') {
-              setModalMessage(null);
-            }
+    // Función para obtener el estado más reciente del evento
+    const fetchEventStatus = async () => {
+      const { data, error } = await supabase
+        .from('eventos')
+        .select('estado')
+        .eq('id', eventId)
+        .single();
+      
+      if (!error && data) {
+        if (data.estado !== eventoEstado) {
+          setEventoEstado(data.estado);
+          const { data: session } = await supabase.auth.getSession();
+          const currentUserId = session.session?.user.id || null;
+          if (data.estado === 'inactivo' && (!currentUserId || currentUserId !== organizadorId)) {
+            setModalMessage('El evento está inactivo. No podés realizar modificaciones.');
+          } else if (data.estado === 'activo') {
+            setModalMessage(null);
           }
         }
-      )
-      .subscribe();
+      }
+    };
+    
+    // Llamamos a la función al inicio para asegurar el estado actual
+    fetchEventStatus();
+
+    // Establecemos un intervalo para verificar el estado cada 3 segundos
+    const intervalId = setInterval(fetchEventStatus, 3000);
+
+    // Función de limpieza para detener el intervalo cuando el componente se desmonte
+    return () => clearInterval(intervalId);
+  }, [eventId, eventoEstado, userId, organizadorId]);
+
+
+  // LÓGICA ORIGINAL PARA CARGAR LOS HORARIOS Y EL PERSONAL
+  useEffect(() => {
+    if (!eventId) return;
 
     const fetchItems = async () => {
       const { data: sched, error: schedError } = await supabase
@@ -145,11 +160,7 @@ const EventSchedule: React.FC = () => {
     };
 
     fetchItems();
-
-    return () => {
-      supabase.removeChannel(subscription);
-    };
-  }, [eventId, eventoEstado, userId, organizadorId]);
+  }, [eventId]);
 
   const isBlocked = eventoEstado === 'inactivo' && (!userId || userId !== organizadorId);
 
@@ -158,14 +169,11 @@ const EventSchedule: React.FC = () => {
       setModalMessage('El evento está inactivo. No podés realizar modificaciones.');
       return;
     }
-
     if (!title.trim() || !time) {
       setScheduleError('Completá todos los campos.');
       return;
     }
-
     setScheduleError(null);
-
     if (editingScheduleId !== null) {
       const { error } = await supabase
         .from('schedule_blocks')
@@ -190,7 +198,6 @@ const EventSchedule: React.FC = () => {
         setError(`Error al agregar horario: ${error.message}`);
       }
     }
-
     setTitle('');
     setTime('');
     setEditingScheduleId(null);
@@ -201,14 +208,11 @@ const EventSchedule: React.FC = () => {
       setModalMessage('El evento está inactivo. No podés realizar modificaciones.');
       return;
     }
-
     if (!name.trim() || !role.trim() || !contact.trim()) {
       setStaffError('Completá todos los campos.');
       return;
     }
-
     setStaffError(null);
-
     if (editingStaffId !== null) {
       const { error } = await supabase
         .from('external_staff')
@@ -233,7 +237,6 @@ const EventSchedule: React.FC = () => {
         setError(`Error al agregar colaborador: ${error.message}`);
       }
     }
-
     setName('');
     setRole('');
     setContact('');
@@ -249,13 +252,11 @@ const EventSchedule: React.FC = () => {
       setError('No hay ID de evento para eliminar');
       return;
     }
-
     const { error } = await supabase
       .from('schedule_blocks')
       .delete()
       .eq('id', id)
       .eq('evento_id', String(eventId));
-
     if (!error) {
       setSchedule(prev => prev.filter(b => b.id !== id));
     } else {
@@ -272,13 +273,11 @@ const EventSchedule: React.FC = () => {
       setError('No hay ID de evento para eliminar');
       return;
     }
-
     const { error } = await supabase
       .from('external_staff')
       .delete()
       .eq('id', id)
       .eq('evento_id', String(eventId));
-
     if (!error) {
       setExternalStaff(prev => prev.filter(s => s.id !== id));
     } else {
@@ -291,22 +290,18 @@ const EventSchedule: React.FC = () => {
       setModalMessage('El evento está inactivo. No podés realizar modificaciones.');
       return;
     }
-
     const params = new URLSearchParams(location.search);
     const tokenParam = params.get('token');
     if (!eventId || !tokenParam) {
       setError('No hay datos suficientes para finalizar');
       return;
     }
-
     if (schedule.length === 0) {
       setError('Debes agregar al menos un horario antes de finalizar');
       return;
     }
-
     await supabase.from('schedule_blocks').delete().eq('evento_id', String(eventId));
     await supabase.from('external_staff').delete().eq('evento_id', String(eventId));
-
     if (schedule.length > 0) {
       const { error } = await supabase.from('schedule_blocks').insert(
         schedule.map(block => ({
@@ -321,7 +316,6 @@ const EventSchedule: React.FC = () => {
         return;
       }
     }
-
     if (externalStaff.length > 0) {
       const { error } = await supabase.from('external_staff').insert(
         externalStaff.map(staff => ({
@@ -337,7 +331,6 @@ const EventSchedule: React.FC = () => {
         return;
       }
     }
-
     if (eventType?.toLowerCase() === 'fiesta15') {
       navigate(`/invitados?token=${tokenParam}`);
     } else {
