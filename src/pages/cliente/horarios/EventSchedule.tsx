@@ -22,7 +22,7 @@ interface ExternalStaff {
 const EventSchedule: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { token, setToken } = useUserContext();
+  const { setToken } = useUserContext();
   const [schedule, setSchedule] = useState<ScheduleBlock[]>([]);
   const [externalStaff, setExternalStaff] = useState<ExternalStaff[]>([]);
   const [title, setTitle] = useState('');
@@ -46,7 +46,7 @@ const EventSchedule: React.FC = () => {
   const idGen = useRef(() => crypto.randomUUID());
 
   useEffect(() => {
-    const verifyToken = async () => {
+    const verifyTokenAndFetchData = async () => {
       const params = new URLSearchParams(location.search);
       const tokenParam = params.get('token');
 
@@ -56,45 +56,53 @@ const EventSchedule: React.FC = () => {
         return;
       }
 
-      if (token !== tokenParam) {
-        setToken(tokenParam);
-      }
-
       try {
-        const { data: session } = await supabase.auth.getSession();
-        const currentUserId = session.session?.user.id || null;
-        setUserId(currentUserId);
+        const { data, error: authError } = await supabase.auth.signInWithIdToken({
+          provider: 'url_token',
+          token: tokenParam,
+        });
 
-        const { data, error } = await supabase
+        if (authError) {
+          throw authError;
+        }
+
+        const currentUserId = data.user?.id || null;
+        setUserId(currentUserId);
+        setToken(tokenParam);
+
+        const { data: eventData, error: eventError } = await supabase
           .from('eventos')
           .select('id, tipo, organizador_id, estado')
           .eq('token_acceso', tokenParam)
           .single();
 
-        if (error || !data) {
-          setError('Evento no encontrado');
-          setLoading(false);
-          return;
+        if (eventError || !eventData) {
+          throw new Error('Evento no encontrado');
         }
 
-        setEventId(data.id);
-        setEventType(data.tipo);
-        setOrganizadorId(data.organizador_id);
-        setEventoEstado(data.estado);
+        setEventId(eventData.id);
+        setEventType(eventData.tipo);
+        setOrganizadorId(eventData.organizador_id);
+        setEventoEstado(eventData.estado);
 
-        if (data.estado === 'inactivo' && (!currentUserId || currentUserId !== data.organizador_id)) {
+        if (eventData.estado === 'inactivo' && (!currentUserId || currentUserId !== eventData.organizador_id)) {
           setModalMessage('El evento está inactivo. No podés realizar modificaciones.');
         }
 
         setLoading(false);
       } catch (err) {
-        setError('Error al conectar con la base de datos');
+        if (err instanceof Error) {
+          setError(`Error al conectar con la base de datos: ${err.message}`);
+        } else {
+          setError('Ocurrió un error desconocido.');
+          console.error(err);
+        }
         setLoading(false);
       }
     };
 
-    verifyToken();
-  }, [location.search, setToken, token]);
+    verifyTokenAndFetchData();
+  }, [location.search, setToken]);
 
   useEffect(() => {
     if (!eventId) return;
@@ -122,15 +130,7 @@ const EventSchedule: React.FC = () => {
       )
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(subscription);
-    };
-  }, [eventId, eventoEstado, userId, organizadorId]);
-
-  useEffect(() => {
-    if (!eventId) return;
-
-    const fetchData = async () => {
+    const fetchItems = async () => {
       const { data: sched, error: schedError } = await supabase
         .from('schedule_blocks')
         .select('*')
@@ -150,8 +150,12 @@ const EventSchedule: React.FC = () => {
       if (staff) setExternalStaff(staff);
     };
 
-    fetchData();
-  }, [eventId]);
+    fetchItems();
+
+    return () => {
+      supabase.removeChannel(subscription);
+    };
+  }, [eventId, eventoEstado, userId, organizadorId]);
 
   const isBlocked = eventoEstado === 'inactivo' && (!userId || userId !== organizadorId);
 

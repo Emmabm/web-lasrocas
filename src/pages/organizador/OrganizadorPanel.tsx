@@ -14,6 +14,7 @@ export default function OrganizadorPanel() {
   const [nombreEditado, setNombreEditado] = useState('');
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [copyStatus, setCopyStatus] = useState<Record<string, 'copiado' | 'copiar'>>({});
   const navigate = useNavigate();
 
   // Listener para el estado de autenticación
@@ -134,10 +135,15 @@ export default function OrganizadorPanel() {
     console.log('📋 Link copiado al portapapeles.');
   };
 
-  const copiarLink = async (token: string) => {
+  const copiarLink = async (token: string, eventId: string) => {
     try {
       await navigator.clipboard.writeText(`${window.location.origin}/cliente?token=${token}`);
       console.log('✅ Link copiado');
+      setCopyStatus(prev => ({ ...prev, [eventId]: 'copiado' }));
+
+      setTimeout(() => {
+        setCopyStatus(prev => ({ ...prev, [eventId]: 'copiar' }));
+      }, 2000);
     } catch (err) {
       console.error('Error al copiar el link:', err);
     }
@@ -367,12 +373,27 @@ export default function OrganizadorPanel() {
                     </td>
                     <td className="p-4">
                       <div className="flex flex-wrap gap-2">
+                        <a
+                          href={`/cliente?token=${e.token_acceso}`}
+                          className="flex items-center px-3 py-1 border border-gray-300 text-gray-700 rounded-lg hover:bg-orange-500 hover:text-white transition-colors"
+                          title="Ver evento como cliente"
+                        >
+                          Ver evento
+                        </a>
                         <button
-                          onClick={() => copiarLink(e.token_acceso)}
+                          onClick={() => copiarLink(e.token_acceso, e.id)}
                           className="flex items-center px-3 py-1 border border-gray-300 text-gray-700 rounded-lg hover:bg-orange-500 hover:text-white transition-colors"
                           title="Copiar link"
                         >
-                          <Copy className="w-4 h-4 mr-1" /> Copiar
+                          {copyStatus[e.id] === 'copiado' ? (
+                            <>
+                              <CheckCircle className="w-4 h-4 mr-1" /> Copiado
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-4 h-4 mr-1" /> Copiar
+                            </>
+                          )}
                         </button>
                         {['catering', 'mesas', 'cena', 'horarios'].map((path) => (
                           <a
