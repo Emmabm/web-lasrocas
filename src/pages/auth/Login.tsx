@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient';
 import { Eye, EyeOff } from 'lucide-react';
 import { useUserContext } from '../../hooks/useUserContext';
@@ -17,6 +17,75 @@ export default function Auth() {
   const [showPassword, setShowPassword] = useState(false);
   const { setRole } = useUserContext();
   const navigate = useNavigate();
+
+  // Función centralizada para verificar el rol y redirigir
+  const handleRedirect = async () => {
+    setLoading(true);
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (user) {
+      try {
+        // Intenta obtener el perfil del usuario
+        let { data: perfil } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .single();
+
+        // Si el perfil no existe, créalo
+        if (!perfil) {
+          const { error: insertError } = await supabase
+            .from('profiles')
+            .insert([
+              { id: user.id, nombre: user.email, role: 'organizador' }
+            ]);
+          
+          if (insertError) throw new Error('No se pudo generar el perfil correctamente.');
+          
+          // Vuelve a obtener el perfil que acabas de crear
+          const { data: perfilFinal } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single();
+          
+          perfil = perfilFinal;
+        }
+
+        // Ahora que el perfil existe, verifica el rol y redirige
+        if (perfil && perfil.role === 'organizador') {
+          setRole(perfil.role);
+          navigate('/organizador/panel');
+          window.history.replaceState({}, '', window.location.pathname);
+        } else {
+          setFormError('Este usuario no tiene acceso al panel de organizador.');
+          await supabase.auth.signOut();
+        }
+      } catch (error: any) {
+        setFormError(error?.message || 'Error al obtener el perfil.');
+        await supabase.auth.signOut();
+      }
+    }
+    setLoading(false);
+  };
+
+  // Usa useEffect para manejar el flujo de autenticación
+  useEffect(() => {
+    // Llamar a la función de redirección al cargar el componente
+    // Esto es crucial para manejar el caso de confirmación de correo
+    handleRedirect();
+
+    // Suscribirse a cambios de estado de autenticación futuros
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session) {
+        // Si un usuario inicia sesión, llamar a la función de redirección
+        handleRedirect();
+      }
+    });
+
+    // Limpiar la suscripción al desmontar el componente
+    return () => subscription.unsubscribe();
+  }, [navigate, setRole]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,52 +125,24 @@ export default function Auth() {
         });
         if (loginError) throw loginError;
 
-        const { data: userData } = await supabase.auth.getUser();
-        const userId = userData?.user?.id;
-        if (!userId) throw new Error('No se pudo obtener el ID del usuario');
-
-        let { data: perfil } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', userId)
-          .single();
-
-        if (!perfil) {
-          const { error: insertError } = await supabase.from('profiles').insert([
-            { id: userId, nombre: cleanedEmail, role: 'organizador' },
-          ]);
-          if (insertError) throw new Error('No se pudo generar el perfil correctamente.');
-
-          const { data: perfilFinal } = await supabase
-            .from('profiles')
-            .select('role')
-            .eq('id', userId)
-            .single();
-          perfil = perfilFinal;
-        }
-
-        if (!perfil || perfil.role !== 'organizador') {
-          setFormError('Este usuario no tiene acceso al panel de organizador.');
-          setLoading(false);
-          return;
-        }
-
-        setRole(perfil.role);
-        navigate('/organizador/panel');
+        // La redirección es ahora manejada por la función handleRedirect en el useEffect
       } else {
         const { error: signUpError } = await supabase.auth.signUp({
           email: cleanedEmail,
           password,
+          // CORRECCIÓN: Se elimina el redirect en la llamada a signUp.
+          // Supabase ahora enviará el email de confirmación
+          // y el usuario tendrá que hacer clic en él para completar el proceso.
+          // El `handleRedirect` en el useEffect manejará el resto.
         });
         if (signUpError) throw signUpError;
-
         setFormError('Cuenta creada. Verificá tu correo y luego iniciá sesión.');
       }
     } catch (error: any) {
       setFormError(error?.message || 'Error inesperado.');
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   return (

@@ -11,6 +11,7 @@ import EventoPage from './pages/evento/[token]';
 import RequireAuth from './components/RequireAuth';
 import ThankYou from './pages/cliente/gracias/ThankYou';
 import InvitadosCena from './pages/cliente/cena/InvitadosCena';
+
 // Catering
 import Catering from './pages/cliente/catering/Catering';
 import ReceptionSelectionMenu1 from './pages/cliente/catering/menu1/ReceptionSelectionMenu1';
@@ -52,8 +53,8 @@ function App() {
 
 function AppRoutes() {
   const location = useLocation();
-  // Ocultar header y footer en /auth y todas las rutas de organizador
-  const hideHeaderFooter = location.pathname.startsWith('/auth') || location.pathname.startsWith('/organizador');
+  // Ocultar header y footer en la página principal (login) y rutas de organizador
+  const hideHeaderFooter = location.pathname === '/' || location.pathname.startsWith('/organizador');
 
   return (
     <>
@@ -61,10 +62,10 @@ function AppRoutes() {
       <div className="min-h-screen bg-gray-50 flex flex-col">
         <main className="flex-1">
           <Routes>
-            {/* Accesible para todos */}
-            <Route path="/" element={<Home />} />
+            {/* Rutas accesibles para todos */}
+            {/* La ruta principal ahora es el login */}
+            <Route path="/" element={<Login />} />
             <Route path="/cliente" element={<Home />} />
-            <Route path="/auth" element={<Login />} />
             <Route path="/evento/:token" element={<EventoPage />} />
             <Route path="/thank-you" element={<ThankYou />} />
 
@@ -113,7 +114,7 @@ function AppRoutes() {
                 </RequireAuth>
               }
             />
-             <Route
+              <Route
               path="/organizador/evento/:id/cena"
               element={
                 <RequireAuth allowedRoles={['organizador']}>
@@ -174,15 +175,7 @@ function AppRoutes() {
             <Route path="/catering/menu4/comidas-baile" element={<DanceFoodSelection />} />
             <Route path="/catering/menu4/resumen" element={<CateringSummary />} />
 
-            {/* Ruta catch-all */}
-            <Route
-              path="/organizador/*"
-              element={
-                <RequireAuth allowedRoles={['organizador']}>
-                  <Navigate to="/organizador/panel" replace />
-                </RequireAuth>
-              }
-            />
+            {/* Ruta para cualquier otra URL, redirige al login si no se encuentra */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>
