@@ -57,16 +57,8 @@ const EventSchedule: React.FC = () => {
       }
 
       try {
-        const { data, error: authError } = await supabase.auth.signInWithIdToken({
-          provider: 'url_token',
-          token: tokenParam,
-        });
-
-        if (authError) {
-          throw authError;
-        }
-
-        const currentUserId = data.user?.id || null;
+        const { data: session } = await supabase.auth.getSession();
+        const currentUserId = session.session?.user.id || null;
         setUserId(currentUserId);
         setToken(tokenParam);
 
