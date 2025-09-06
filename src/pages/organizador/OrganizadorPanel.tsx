@@ -38,27 +38,7 @@ export default function OrganizadorPanel() {
   useEffect(() => {
     const fetchEventos = async () => {
       if (!user) return;
-
-      const { data: usuario } = await supabase
-        .from('usuarios')
-        .select('rol')
-        .eq('email', user.email)
-        .single();
-
-      if (!usuario) {
-        await supabase.from('usuarios').insert([
-          {
-            email: user.email,
-            nombre: user.user_metadata?.name || 'Sin nombre',
-            rol: 'organizador',
-          },
-        ]);
-      } else if (usuario.rol !== 'organizador') {
-        console.error('Acceso denegado');
-        navigate('/');
-        return;
-      }
-
+      
       const { data, error } = await supabase
         .from('eventos')
         .select('id, tipo, nombre, created_at, token_acceso, estado')
@@ -93,6 +73,29 @@ export default function OrganizadorPanel() {
     if (!user?.id) {
       console.error('Usuario no identificado');
       return;
+    }
+
+    // Asegurarse de que el usuario exista en la tabla "usuarios" antes de crear el evento
+    const { data: usuario, error: fetchUserError } = await supabase
+      .from('usuarios')
+      .select('id')
+      .eq('id', user.id)
+      .single();
+
+    if (fetchUserError || !usuario) {
+      // Si el usuario no existe, crearlo.
+      const { error: insertUserError } = await supabase.from('usuarios').insert([
+        {
+          id: user.id,
+          email: user.email,
+          nombre: user.user_metadata?.name || 'Sin nombre',
+          rol: 'organizador',
+        },
+      ]);
+      if (insertUserError) {
+        console.error('Error al crear el usuario en la tabla "usuarios":', insertUserError);
+        return;
+      }
     }
 
     const token =
