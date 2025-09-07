@@ -134,7 +134,7 @@ const DessertSelectionMenu2: React.FC = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             <div className="rounded-xl border-2 border-gray-200 overflow-hidden">
               <img 
-                src="/public/img/platos/helado-chocolate-limon.webp" 
+                src="/img/platos/helado-chocolate-limon.webp" 
                 alt="Helado de chocolate y limón" 
                 className="w-full h-48 object-cover" 
               />
