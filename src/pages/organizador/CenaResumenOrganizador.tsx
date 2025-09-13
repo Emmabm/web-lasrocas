@@ -86,10 +86,10 @@ export default function CenaResumenOrganizador() {
     invitados.forEach((invitado) => {
       sheetData.push([
         invitado.nombre_apellido,
-        invitado.num_adultos,
-        invitado.num_ninos,
-        invitado.num_bebes,
-        invitado.observaciones || "Sin observaciones",
+        invitado.num_adultos || "",
+        invitado.num_ninos || "",
+        invitado.num_bebes || "",
+        invitado.observaciones || "",
       ]);
     });
 
@@ -194,10 +194,10 @@ export default function CenaResumenOrganizador() {
                       className={`border-b border-gray-200 ${index % 2 === 0 ? "bg-gray-50" : "bg-white"} hover:bg-orange-50`}
                     >
                       <td className="p-3 text-gray-700">{invitado.nombre_apellido}</td>
-                      <td className="p-3 text-gray-700">{invitado.num_adultos}</td>
-                      <td className="p-3 text-gray-700">{invitado.num_ninos}</td>
-                      <td className="p-3 text-gray-700">{invitado.num_bebes}</td>
-                      <td className="p-3 text-gray-700">{invitado.observaciones || "Sin observaciones"}</td>
+                      <td className="p-3 text-gray-700">{invitado.num_adultos || ""}</td>
+                      <td className="p-3 text-gray-700">{invitado.num_ninos || ""}</td>
+                      <td className="p-3 text-gray-700">{invitado.num_bebes || ""}</td>
+                      <td className="p-3 text-gray-700">{invitado.observaciones || ""}</td>
                     </tr>
                   ))
                 ) : (

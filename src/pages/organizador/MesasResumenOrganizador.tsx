@@ -177,15 +177,22 @@ const exportToExcel = () => {
             mesa.guest_groups.forEach((grupo) => {
                 guestTableData.push([
                     grupo.name,
-                    grupo.numAdults,
-                    grupo.numChildren,
-                    grupo.numBabies,
+                    grupo.numAdults || "",
+                    grupo.numChildren || "",
+                    grupo.numBabies || "",
                     mesaNombre,
-                    grupo.details || "Sin observaciones",
+                    grupo.details || "",
                 ]);
             });
         } else {
-            guestTableData.push(["Sin asignar", 0, 0, 0, mesaNombre, "Sin observaciones"]);
+            guestTableData.push([
+                "Sin asignar",
+                "",
+                "",
+                "",
+                mesaNombre,
+                "",
+            ]);
         }
     });
 
@@ -359,10 +366,10 @@ const exportToExcel = () => {
                         <tr key={mesa.id} className="border-b border-gray-200 bg-white hover:bg-orange-50">
                           <td className="p-3 text-gray-700">{mesaNombre}</td>
                           <td className="p-3 text-gray-700">Sin asignar</td>
-                          <td className="p-3 text-gray-700">0</td>
-                          <td className="p-3 text-gray-700">0</td>
-                          <td className="p-3 text-gray-700">0</td>
-                          <td className="p-3 text-gray-700">Sin observaciones</td>
+                          <td className="p-3 text-gray-700"></td>
+                          <td className="p-3 text-gray-700"></td>
+                          <td className="p-3 text-gray-700"></td>
+                          <td className="p-3 text-gray-700"></td>
                         </tr>,
                       ];
                     }
@@ -373,10 +380,10 @@ const exportToExcel = () => {
                       >
                         <td className="p-3 text-gray-700">{i === 0 ? mesaNombre : ""}</td>
                         <td className="p-3 text-gray-700">{grupo.name}</td>
-                        <td className="p-3 text-gray-700">{grupo.numAdults}</td>
-                        <td className="p-3 text-gray-700">{grupo.numChildren}</td>
-                        <td className="p-3 text-gray-700">{grupo.numBabies}</td>
-                        <td className="p-3 text-gray-700">{grupo.details || "Sin observaciones"}</td>
+                        <td className="p-3 text-gray-700">{grupo.numAdults || ""}</td>
+                        <td className="p-3 text-gray-700">{grupo.numChildren || ""}</td>
+                        <td className="p-3 text-gray-700">{grupo.numBabies || ""}</td>
+                        <td className="p-3 text-gray-700">{grupo.details || ""}</td>
                       </tr>
                     ));
                   })
