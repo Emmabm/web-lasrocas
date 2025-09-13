@@ -14,6 +14,7 @@ type Table = {
   tableName?: string;
   numAdults?: number;
   numChildren?: number;
+  numBabies?: number;
   descripcion?: string;
   guestGroups?: GuestGroup[];
 };
@@ -41,7 +42,7 @@ const TableSummary: React.FC<Props> = ({ tables, selectTable, setShowModal, isBl
   });
 
   const warnings = tables.filter(t => {
-    const total = (t.numAdults ?? 0) + (t.numChildren ?? 0);
+    const total = (t.numAdults ?? 0) + (t.numChildren ?? 0) + (t.numBabies ?? 0);
     return t.isAssignable && total > 0 && total < 8;
   });
 
@@ -76,7 +77,8 @@ const TableSummary: React.FC<Props> = ({ tables, selectTable, setShowModal, isBl
             {orderedUsed.map(t => {
               const adultos = t.numAdults ?? 0;
               const niños = t.numChildren ?? 0;
-              const total = adultos + niños;
+              const bebes = t.numBabies ?? 0;
+              const total = adultos + niños + bebes;
               const groupNames = t.guestGroups?.map(g => g.name).filter(Boolean).join(', ') || 'Sin grupos asignados';
               
               const isWarning = warnings.some(w => w.id === t.id);
@@ -100,6 +102,9 @@ const TableSummary: React.FC<Props> = ({ tables, selectTable, setShowModal, isBl
                     </div>
                     <div className="text-sm text-gray-600">
                       <span className="font-medium">Niños:</span> {niños}
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      <span className="font-medium">Bebés:</span> {bebes}
                     </div>
                     <div className="text-sm font-bold text-gray-700">
                       Total: {total} persona{total !== 1 ? 's' : ''}
@@ -141,7 +146,7 @@ const TableSummary: React.FC<Props> = ({ tables, selectTable, setShowModal, isBl
               <h3 className="font-bold text-lg text-red-800 mb-3">Advertencias</h3>
               <ul className="text-sm text-red-700 space-y-2">
                 {warnings.map(t => {
-                  const total = (t.numAdults ?? 0) + (t.numChildren ?? 0);
+                  const total = (t.numAdults ?? 0) + (t.numChildren ?? 0) + (t.numBabies ?? 0);
                   return (
                     <li key={t.id}>
                       Mesa <strong>{t.isMain ? 'Principal' : t.tableName ?? t.id}</strong>: {total} persona{total !== 1 ? 's' : ''}
