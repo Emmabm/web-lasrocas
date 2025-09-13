@@ -15,7 +15,8 @@ const comidasExtra = [
 
 const DanceFoodSelection: React.FC = () => {
   const [comidasSeleccionadas, setComidasSeleccionadas] = useState<{ nombre: string; cantidad: number }[]>([]);
-  const [helados, setHelados] = useState<number>(60);
+  const [helados, setHelados] = useState<number | null>(null);
+  const [incluirHelados, setIncluirHelados] = useState<boolean>(false);
   const [eventId, setEventId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -80,8 +81,19 @@ const DanceFoodSelection: React.FC = () => {
   };
 
   const handleHeladosChange = (value: number) => {
-    if (value === 0 || value >= 60) {
+    if (value >= 60) {
       setHelados(value);
+    } else {
+      setHelados(null);
+    }
+  };
+
+  const toggleHelados = () => {
+    setIncluirHelados((prev) => !prev);
+    if (!incluirHelados) {
+      setHelados(60);
+    } else {
+      setHelados(null);
     }
   };
 
@@ -90,7 +102,7 @@ const DanceFoodSelection: React.FC = () => {
     const urlToken = params.get('token');
     const finalToken = urlToken || contextToken;
 
-    if (helados > 0 && helados < 60) {
+    if (incluirHelados && helados !== null && helados < 60) {
       setError('El stand de helados requiere un mínimo de 60 unidades.');
       return;
     }
@@ -127,7 +139,7 @@ const DanceFoodSelection: React.FC = () => {
       p_paso: `baile-${menu}`,
       p_datos: { 
         comidas: { incluidas: ['Bandejeo de pizzas'], extra: comidasSeleccionadas.filter((c) => c.cantidad > 0) },
-        helados: helados >= 60 ? helados : null,
+        helados: incluirHelados && helados !== null ? helados : null,
       },
     });
 
@@ -202,15 +214,23 @@ const DanceFoodSelection: React.FC = () => {
           Stand de helados (mínimo 60 unidades, opcional):
         </p>
         <div className="flex justify-center items-center gap-4 mb-10">
-          <IceCream className="text-[#FF6B35] h-6 w-6" />
           <input
-            type="number"
-            min="0"
-            value={helados}
-            onChange={(e) => handleHeladosChange(parseInt(e.target.value) || 0)}
-            className="w-32 p-3 border border-gray-300 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-[#FF6B35] bg-orange-50"
-            placeholder="Cantidad de helados"
+            type="checkbox"
+            checked={incluirHelados}
+            onChange={toggleHelados}
+            className="h-5 w-5 text-[#FF6B35] focus:ring-[#FF6B35] border-gray-300 rounded"
           />
+          <IceCream className="text-[#FF6B35] h-6 w-6" />
+          {incluirHelados && (
+            <input
+              type="number"
+              min="60"
+              value={helados || 60}
+              onChange={(e) => handleHeladosChange(parseInt(e.target.value) || 60)}
+              className="w-32 p-3 border border-gray-300 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-[#FF6B35] bg-orange-50"
+              placeholder="Cantidad de helados"
+            />
+          )}
         </div>
         <div className="flex justify-center gap-6">
           <button
