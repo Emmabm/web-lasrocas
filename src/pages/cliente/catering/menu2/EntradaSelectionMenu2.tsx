@@ -60,17 +60,15 @@ const EntradaSelectionMenu2: React.FC = () => {
 
   const toggleItem = (item: string) => {
     if (entradas.includes(item)) {
-      setEntradas(entradas.filter((entrada) => entrada !== item));
-    } else if (entradas.length < 3) {
-      setEntradas([...entradas, item]);
+      setEntradas([]);
     } else {
-      alert('Solo podés seleccionar hasta 3 opciones.');
+      setEntradas([item]);
     }
   };
 
   const continuar = async () => {
-    if (entradas.length === 0) {
-      setError('Debés elegir al menos una entrada.');
+    if (entradas.length !== 1) {
+      setError('Debés elegir exactamente una entrada.');
       return;
     }
 
@@ -133,7 +131,7 @@ const EntradaSelectionMenu2: React.FC = () => {
         </h1>
         <p className="text-center text-gray-600 text-lg mb-4">
           Incluye bandejeo de canapés fríos, calientes, pinchos de carnes y verduras, empanadas surtidas. Elegí{' '}
-          <span className="text-[#FF6B35] font-semibold">hasta 3 entradas</span>.
+          <span className="text-[#FF6B35] font-semibold">una entrada</span>.
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           {opcionesEntrada.map((item) => (
@@ -157,9 +155,9 @@ const EntradaSelectionMenu2: React.FC = () => {
           </button>
           <button
             onClick={continuar}
-            disabled={entradas.length === 0}
+            disabled={entradas.length !== 1}
             className={`px-6 py-2 rounded-md text-white shadow-md transition-all duration-300 hover:scale-105 ${
-              entradas.length > 0 ? 'bg-[#FF6B35] hover:bg-[#e65a23]' : 'bg-gray-400 cursor-not-allowed'
+              entradas.length === 1 ? 'bg-[#FF6B35] hover:bg-[#e65a23]' : 'bg-gray-400 cursor-not-allowed'
             }`}
           >
             Confirmar y continuar →

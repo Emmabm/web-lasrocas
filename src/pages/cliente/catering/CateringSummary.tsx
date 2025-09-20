@@ -275,17 +275,27 @@ const CateringSummary: React.FC = () => {
       );
     }
 
-    if (paso.includes('entrada') || paso.includes('plato-entrada')) {
+    if (paso.includes('entrada') && !paso.includes('plato-entrada')) {
       return (
         <ul className="text-gray-700 text-base list-disc list-inside">
           {datos.entrada ? (
             <li>{datos.entrada}</li>
-          ) : datos.entradas?.length > 0 ? (
-            datos.entradas.map((opcion: string) => <li key={opcion}>{opcion}</li>)
           ) : datos.opciones?.length > 0 ? (
             datos.opciones.map((opcion: string) => <li key={opcion}>{opcion}</li>)
           ) : datos.tipo ? (
             <li>{datos.tipo}</li>
+          ) : (
+            <li>Ninguna</li>
+          )}
+        </ul>
+      );
+    }
+
+    if (paso.includes('plato-entrada')) {
+      return (
+        <ul className="text-gray-700 text-base list-disc list-inside">
+          {datos.entradas?.length > 0 ? (
+            <li>{datos.entradas[0]}</li>
           ) : (
             <li>Ninguna</li>
           )}
