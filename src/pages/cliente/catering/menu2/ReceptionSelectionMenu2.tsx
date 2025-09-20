@@ -3,18 +3,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../../../../supabaseClient';
 import { useUserContext } from '../../../../hooks/useUserContext';
 
-const opcionesEntrada = [
-  'Selección de Fiambres y quesos: Jamón serrano, bondiola de cerdo, lomito braseado a las hierbas, salame tandilero. Queso pategras, reggianito, provolone y feta de cabra, con nueces, pasas negras y rubias y tostaditas de pan de campo.',
-  'Lasagna bolognesa: mozarella, espinaca, jamón y queso y salsa bolognesa.',
-  'Ensalada Caesar: hojas verdes, pollo grillé, croutons, hebras de parmesano y aderezo Caesar.',
-  'Tostón de pan de campo con jamón serrano y ensalada caponata.',
-  'Provoleta a la plancha con vegetales grillados y chimichurri de hierbas.',
-  'Milhojas de vegetales asados y queso fontina con coulis de morrones y tomates asados.',
-];
-
-const ReceptionSelectionMenu2: React.FC = () => {
-  const [entrada, setEntrada] = useState<string | null>(null);
-  const [eventId, setEventId] = useState<string | null>(null);
+const ReceptionSelectionMenu2 = () => {
+  const [eventId, setEventId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { token, setPaso } = useUserContext();
@@ -59,11 +49,6 @@ const ReceptionSelectionMenu2: React.FC = () => {
   }, [token, location.search, setPaso]);
 
   const continuar = async () => {
-    if (!entrada) {
-      setError('Debés elegir una entrada.');
-      return;
-    }
-
     if (!eventId) {
       setError('No se encontró el ID del evento');
       return;
@@ -88,7 +73,7 @@ const ReceptionSelectionMenu2: React.FC = () => {
     const { error } = await supabase.rpc('upsert_menu2_formularios', {
       p_event_id: eventId,
       p_paso: 'entrada-menu2',
-      p_datos: { entrada },
+      p_datos: { tipo: 'bandejeo y mesa de fiambres' },
     });
 
     if (error) {
@@ -117,27 +102,23 @@ const ReceptionSelectionMenu2: React.FC = () => {
 
   return (
     <div className="bg-white flex justify-center pt-10 pb-6 px-6">
-      <div className="max-w-5xl w-full bg-white rounded-2xl shadow-lg px-8 py-6">
-        <h1 className="text-4xl font-serif font-bold text-center text-gray-800 mb-6">
-          Entrada — Menú 2 (Clásico)
+      <div className="max-w-3xl w-full bg-white rounded-2xl shadow-lg px-6 py-4">
+        <h1 className="text-3xl sm:text-4xl font-serif font-bold text-center text-gray-800 mb-4 sm:mb-6">
+          Recepción — Menú 2 (Clásico)
         </h1>
-        <p className="text-center text-gray-600 text-lg mb-4">
-          Incluye bandejeo de canapés fríos, calientes, pinchos de carnes y verduras, empanadas surtidas. Elegí{' '}
-          <span className="text-[#FF6B35] font-semibold">1 entrada</span>.
+
+        <p className="text-center text-gray-600 text-base sm:text-lg mb-4">
+          La recepción incluye <span className="text-[#FF6B35] font-semibold">bandejeo y mesa de fiambres</span>:
         </p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          {opcionesEntrada.map((item) => (
-            <div
-              key={item}
-              onClick={() => setEntrada(item)}
-              className={`p-6 rounded-xl border-2 text-center cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ${entrada === item ? 'border-[#FF6B35] bg-orange-50' : 'border-gray-200'
-                }`}
-            >
-              <p className="text-base font-medium text-gray-800">{item}</p>
-            </div>
-          ))}
+
+        <div className="bg-orange-50 border border-[#FF6B35] rounded-xl px-6 py-5 sm:py-6 mb-8 shadow-sm">
+          <p className="text-gray-700 text-sm sm:text-base leading-relaxed text-center">
+            Bandejeo de canapés fríos, calientes, pinchos de carnes y verduras, empanadas surtidas y una mesa
+            de fiambres y quesos de estación.
+          </p>
         </div>
-        <div className="flex justify-center gap-4">
+
+        <div className="flex justify-center flex-col sm:flex-row gap-4 sm:gap-6 mt-4">
           <button
             onClick={volver}
             className="bg-white border border-gray-300 text-gray-700 px-6 py-2 rounded-md hover:bg-gray-100 transition"
@@ -146,9 +127,7 @@ const ReceptionSelectionMenu2: React.FC = () => {
           </button>
           <button
             onClick={continuar}
-            disabled={!entrada}
-            className={`px-6 py-2 rounded-md text-white shadow-md transition-all duration-300 hover:scale-105 ${entrada ? 'bg-[#FF6B35] hover:bg-[#e65a23]' : 'bg-gray-400 cursor-not-allowed'
-              }`}
+            className="bg-[#FF6B35] hover:bg-[#e65a23] text-white px-6 py-2 rounded-md shadow-md transition-all duration-300 hover:scale-[1.03]"
           >
             Confirmar y continuar →
           </button>
