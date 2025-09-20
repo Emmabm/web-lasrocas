@@ -42,6 +42,9 @@ const EventSchedule: React.FC = () => {
   const [eventoEstado, setEventoEstado] = useState<'activo' | 'inactivo' | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [organizadorId, setOrganizadorId] = useState<string | null>(null);
+  // Nuevo estado para el modal de finalización
+  const [showFinalizeModal, setShowFinalizeModal] = useState(false);
+  const [finalizeModalMessage, setFinalizeModalMessage] = useState('');
 
   const idGen = useRef(() => crypto.randomUUID());
 
@@ -96,12 +99,9 @@ const EventSchedule: React.FC = () => {
     verifyTokenAndFetchData();
   }, [location.search, setToken]);
 
-
-  // **NUEVA LÓGICA DE SINCRONIZACIÓN MÁS ROBUSTA**
   useEffect(() => {
     if (!eventId) return;
 
-    // Función para obtener el estado más reciente del evento
     const fetchEventStatus = async () => {
       const { data, error } = await supabase
         .from('eventos')
@@ -123,18 +123,11 @@ const EventSchedule: React.FC = () => {
       }
     };
     
-    // Llamamos a la función al inicio para asegurar el estado actual
     fetchEventStatus();
-
-    // Establecemos un intervalo para verificar el estado cada 3 segundos
     const intervalId = setInterval(fetchEventStatus, 3000);
-
-    // Función de limpieza para detener el intervalo cuando el componente se desmonte
     return () => clearInterval(intervalId);
   }, [eventId, eventoEstado, userId, organizadorId]);
 
-
-  // LÓGICA ORIGINAL PARA CARGAR LOS HORARIOS Y EL PERSONAL
   useEffect(() => {
     if (!eventId) return;
 
@@ -293,44 +286,55 @@ const EventSchedule: React.FC = () => {
     const params = new URLSearchParams(location.search);
     const tokenParam = params.get('token');
     if (!eventId || !tokenParam) {
-      setError('No hay datos suficientes para finalizar');
+      setFinalizeModalMessage('No hay datos suficientes para finalizar');
+      setShowFinalizeModal(true);
       return;
     }
     if (schedule.length === 0) {
-      setError('Debes agregar al menos un horario antes de finalizar');
+      setFinalizeModalMessage('Debes agregar al menos un horario antes de finalizar.');
+      setShowFinalizeModal(true);
       return;
     }
+    
+    // **NOTA:** La lógica de borrado y re-inserción de todos los datos no es óptima.
+    // Un `upsert` o un `bulk update` sería más eficiente para evitar perder datos si falla la inserción.
+    // Para este caso, mantenemos la lógica original y nos enfocamos en el modal.
     await supabase.from('schedule_blocks').delete().eq('evento_id', String(eventId));
     await supabase.from('external_staff').delete().eq('evento_id', String(eventId));
-    if (schedule.length > 0) {
-      const { error } = await supabase.from('schedule_blocks').insert(
-        schedule.map(block => ({
+
+    const scheduleInsert = schedule.length > 0
+      ? supabase.from('schedule_blocks').insert(schedule.map(block => ({
           id: block.id,
           title: block.title,
           time: block.time,
           evento_id: String(eventId),
-        }))
-      );
-      if (error) {
-        setError(`Error al guardar horarios: ${error.message}`);
-        return;
-      }
-    }
-    if (externalStaff.length > 0) {
-      const { error } = await supabase.from('external_staff').insert(
-        externalStaff.map(staff => ({
+        })))
+      : { error: null };
+    
+    const staffInsert = externalStaff.length > 0
+      ? supabase.from('external_staff').insert(externalStaff.map(staff => ({
           id: staff.id,
           name: staff.name,
           role: staff.role,
           contact: staff.contact,
           evento_id: String(eventId),
-        }))
-      );
-      if (error) {
-        setError(`Error al guardar personal: ${error.message}`);
-        return;
-      }
+        })))
+      : { error: null };
+
+    const [scheduleResult, staffResult] = await Promise.all([scheduleInsert, staffInsert]);
+    
+    if (scheduleResult.error) {
+      setFinalizeModalMessage(`Error al guardar horarios: ${scheduleResult.error.message}`);
+      setShowFinalizeModal(true);
+      return;
     }
+    
+    if (staffResult.error) {
+      setFinalizeModalMessage(`Error al guardar personal: ${staffResult.error.message}`);
+      setShowFinalizeModal(true);
+      return;
+    }
+    
     if (eventType?.toLowerCase() === 'fiesta15') {
       navigate(`/invitados?token=${tokenParam}`);
     } else {
@@ -352,6 +356,7 @@ const EventSchedule: React.FC = () => {
 
   return (
     <div className="container mx-auto px-4 py-8 bg-white" style={{ pointerEvents: isBlocked ? 'none' : 'auto' }}>
+      {/* Modal de estado inactivo */}
       {modalMessage && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" style={{ pointerEvents: 'auto' }}>
           <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full">
@@ -366,6 +371,23 @@ const EventSchedule: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Nuevo Modal para errores de finalización */}
+      {showFinalizeModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">Error de Finalización</h3>
+            <p className="text-gray-600 mb-6">{finalizeModalMessage}</p>
+            <button
+              className="bg-[#FF6B35] text-white px-4 py-2 rounded-md hover:bg-[#FF6B35]/90 w-full transition-colors"
+              onClick={() => setShowFinalizeModal(false)}
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
+      )}
+
       {isBlocked && !modalMessage && (
         <div className="fixed inset-0 z-40 bg-transparent" />
       )}
@@ -560,13 +582,7 @@ const EventSchedule: React.FC = () => {
       </div>
       <div className="max-w-2xl mx-auto">
         <button
-          onClick={() => {
-            if (isBlocked) {
-              setModalMessage('El evento está inactivo. No podés realizar modificaciones.');
-              return;
-            }
-            handleFinalize();
-          }}
+          onClick={handleFinalize}
           className={`bg-[#FF6B35] text-white px-6 py-3 rounded-md w-full hover:bg-[#FF6B35]/90 transition-colors ${isBlocked ? 'opacity-50 cursor-not-allowed' : ''}`}
           disabled={isBlocked}
         >
