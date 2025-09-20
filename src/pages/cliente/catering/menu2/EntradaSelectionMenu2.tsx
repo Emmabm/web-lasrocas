@@ -58,11 +58,13 @@ const EntradaSelectionMenu2: React.FC = () => {
     fetchEvent();
   }, [token, location.search, setPaso]);
 
-  const handleEntradaChange = (item: string) => {
+  const toggleItem = (item: string) => {
     if (entradas.includes(item)) {
       setEntradas(entradas.filter((entrada) => entrada !== item));
     } else if (entradas.length < 3) {
       setEntradas([...entradas, item]);
+    } else {
+      alert('Solo podés seleccionar hasta 3 opciones.');
     }
   };
 
@@ -137,21 +139,12 @@ const EntradaSelectionMenu2: React.FC = () => {
           {opcionesEntrada.map((item) => (
             <div
               key={item}
-              onClick={() => handleEntradaChange(item)}
+              onClick={() => toggleItem(item)}
               className={`p-6 rounded-xl border-2 text-center cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ${
                 entradas.includes(item) ? 'border-[#FF6B35] bg-orange-50' : 'border-gray-200'
               }`}
             >
-              <label className="flex items-center space-x-3">
-                <input
-                  type="checkbox"
-                  checked={entradas.includes(item)}
-                  onChange={() => handleEntradaChange(item)}
-                  disabled={!entradas.includes(item) && entradas.length >= 3}
-                  className="h-5 w-5 text-[#FF6B35] focus:ring-[#FF6B35] border-gray-300 rounded"
-                />
-                <p className="text-base font-medium text-gray-800">{item}</p>
-              </label>
+              <p className="text-base font-medium text-gray-800">{item}</p>
             </div>
           ))}
         </div>
