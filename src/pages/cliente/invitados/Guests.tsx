@@ -185,6 +185,11 @@ const Guests = () => {
       return;
     }
 
+    if (!token) {
+      setModalMessage("Error: No se encontró el token de acceso.");
+      return;
+    }
+
     // Primero, eliminamos los invitados existentes para evitar duplicados
     const { error: deleteError } = await supabase
       .from("invitados")
@@ -206,7 +211,7 @@ const Guests = () => {
       return;
     }
 
-    console.log("Invitados guardados correctamente");
+    console.log("Invitados guardados correctamente, redirigiendo a /observaciones con token:", token);
     navigate(`/observaciones?token=${token}`);
   };
 
