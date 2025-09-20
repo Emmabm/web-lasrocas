@@ -47,14 +47,6 @@ const GuestsWrapper = () => {
         return;
       }
 
-      if (data.tipo.toLowerCase() !== "fiesta15") {
-        setModalMessage("Esta sección es solo para eventos de tipo Fiesta de 15.");
-        navigate(`/horarios?token=${activeToken}`);
-        return;
-      }
-
-      // **Se eliminó la validación de los horarios.**
-      // La página de invitados se mostrará ahora sin importar si los horarios han sido llenados.
 
       setLoading(false);
     };
@@ -75,7 +67,7 @@ const GuestsWrapper = () => {
     );
   }
 
-  // Si no hay token en el contexto, no se renderiza el componente Guests.
+
   if (!token) {
     return null;
   }
