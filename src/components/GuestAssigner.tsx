@@ -22,7 +22,7 @@ interface GuestAssignerProps {
     numBabies: number
   ) => void;
   isBlocked: boolean;
-  onBlockedAction: () => void; // Nuevo callback para notificar acciones bloqueadas
+  onBlockedAction: () => void;
 }
 
 const MIN_GUESTS = 8;
@@ -69,6 +69,11 @@ const GuestAssigner: React.FC<GuestAssignerProps> = ({ table, onClose, onSave, i
   const totalGuests = useMemo(() =>
     guestGroups.reduce((sum, group) => sum + group.numAdults + group.numChildren + group.numBabies, 0),
     [guestGroups]
+  );
+
+  const totalNewGroupGuests = useMemo(() =>
+    newGroup.numAdults + newGroup.numChildren + newGroup.numBabies,
+    [newGroup.numAdults, newGroup.numChildren, newGroup.numBabies]
   );
 
   const handleAddGroup = () => {
@@ -140,6 +145,11 @@ const GuestAssigner: React.FC<GuestAssignerProps> = ({ table, onClose, onSave, i
 
   const isSaveButtonDisabled = isBlocked || totalGuests === 0 || totalGuests < minGuests || totalGuests > maxGuests;
 
+  const getLimitMessage = () => {
+    if (isBlocked) return 'El evento está inactivo. No podés realizar modificaciones.';
+    return `Total de personas por mesa: mínimo ${minGuests}, máximo ${maxGuests}. Actualmente: ${totalGuests + totalNewGroupGuests} persona(s).`;
+  };
+
   const getSaveMessage = () => {
     if (isBlocked) return 'El evento está inactivo. No podés realizar modificaciones.';
     if (totalGuests === 0) return 'No se puede guardar una mesa sin invitados.';
@@ -148,6 +158,7 @@ const GuestAssigner: React.FC<GuestAssignerProps> = ({ table, onClose, onSave, i
     return '';
   };
 
+  const limitMessage = getLimitMessage();
   const saveMessage = getSaveMessage();
 
   return (
@@ -231,6 +242,14 @@ const GuestAssigner: React.FC<GuestAssignerProps> = ({ table, onClose, onSave, i
                     onChange={(e) => isBlocked ? onBlockedAction() : setNewGroup({ ...newGroup, numBabies: Number(e.target.value) || 0 })}
                     disabled={isBlocked}
                   />
+                </div>
+              </div>
+              <div className="p-3 bg-blue-50 border border-blue-100 rounded-md">
+                <div className="flex">
+                  <AlertCircle className="h-5 w-5 text-blue-500 mr-2 flex-shrink-0" />
+                  <div className="text-sm text-blue-700">
+                    {limitMessage}
+                  </div>
                 </div>
               </div>
               <textarea

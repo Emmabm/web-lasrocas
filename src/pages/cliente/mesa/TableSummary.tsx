@@ -123,7 +123,7 @@ const TableSummary: React.FC<Props> = ({ tables, selectTable, setShowModal, isBl
 
                   <button
                     onClick={() => handleEdit(t.id)}
-                    className={`mt-4 w-full flex items-center justify-center gap-2 py-2 px-4 text-sm font-semibold text-white rounded-lg shadow-md transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${isBlocked ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
+                    className={`mt-4 w-full flex items-center justify-center gap-2 py-2 px-4 text-sm font-semibold text-white rounded-lg shadow-md transition-colors focus:outline-none focus:ring-2 focus:ring-[#FF6B35] focus:ring-offset-2 ${isBlocked ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#FF6B35] hover:bg-[#FF6B35]/90'}`}
                     disabled={isBlocked}
                   >
                     <Edit2 size={16} /> Editar
