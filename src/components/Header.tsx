@@ -9,49 +9,29 @@ const Header: React.FC = () => {
   const navigate = useNavigate();
   const { menuSeleccionado, token, setToken, setMenuSeleccionado } = useUserContext();
   const [logueado, setLogueado] = useState(false);
-  const [mostrarInvitados, setMostrarInvitados] = useState(false);
+  const [mostrarInvitados] = useState(true); // siempre true 👈
 
   const urlToken = new URLSearchParams(location.search).get('token');
 
   // Efecto para persistir el token y el menú seleccionado
   useEffect(() => {
-    const fetchEventData = async () => {
-      const activeToken = urlToken || token;
-      if (!activeToken) {
-        return;
-      }
+    const activeToken = urlToken || token;
+    if (!activeToken) {
+      return;
+    }
 
-      // Persiste el token en el contexto
-      if (urlToken && token !== urlToken) {
-        console.log('Header.tsx - Persistiendo token:', { token, urlToken });
-        setToken(urlToken);
-      }
+    // Persiste el token en el contexto
+    if (urlToken && token !== urlToken) {
+      console.log('Header.tsx - Persistiendo token:', { token, urlToken });
+      setToken(urlToken);
+    }
 
-      // Intenta determinar el tipo de menú basándose en la URL
-      const pathSegments = location.pathname.split('/');
-      const pathMenu = pathSegments.find(segment => segment.startsWith('menu'));
-      if (pathMenu && menuSeleccionado !== pathMenu) {
-        setMenuSeleccionado(pathMenu);
-      }
-
-      // Verifica el tipo de evento para el enlace de invitados
-      const { data, error } = await supabase
-        .from('eventos')
-        .select('tipo')
-        .eq('token_acceso', activeToken)
-        .single();
-
-      if (error || !data) {
-        console.error('Error al verificar tipo de evento:', error);
-        setMostrarInvitados(false);
-      } else if (data.tipo.toLowerCase() === 'fiesta15') {
-        setMostrarInvitados(true);
-      } else {
-        setMostrarInvitados(false);
-      }
-    };
-
-    fetchEventData();
+    // Intenta determinar el tipo de menú basándose en la URL
+    const pathSegments = location.pathname.split('/');
+    const pathMenu = pathSegments.find(segment => segment.startsWith('menu'));
+    if (pathMenu && menuSeleccionado !== pathMenu) {
+      setMenuSeleccionado(pathMenu);
+    }
   }, [urlToken, token, setToken, location.pathname, menuSeleccionado, setMenuSeleccionado]);
 
   useEffect(() => {

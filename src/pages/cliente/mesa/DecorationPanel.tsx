@@ -19,13 +19,20 @@ interface Props {
 
 // Mapa de combinaciones de imágenes
 const imageMap: Record<string, string> = {
-    'white-white': '/img/mesas/blanco-servilleta-blanca.webp',
-    'white-black': '/img/mesas/blanco-servilleta-negra.webp',
-    'grey-white': '/img/mesas/peltre-servilleta-blanca.webp',
-    'grey-black': '/img/mesas/peltre-servilleta-negra.webp',
-    'black-white': '/img/mesas/negro-servilleta-blanca.webp',
-    'black-black': '/img/mesas/negro-servilleta-negra.webp',
-    'two-tone-white-black': '/img/mesas/mixto.webp',
+  'white-white': '/img/mesas/blanco-servilleta-blanca.webp',
+  'white-black': '/img/mesas/blanco-servilleta-negra.webp',
+  'grey-white': '/img/mesas/peltre-servilleta-blanca.webp',
+  'grey-black': '/img/mesas/peltre-servilleta-negra.webp',
+  'black-white': '/img/mesas/negro-servilleta-blanca.webp',
+  'black-black': '/img/mesas/negro-servilleta-negra.webp',
+  'two-tone-white-black': '/img/mesas/mixto.webp',
+};
+
+// Traducción de colores
+const translateColor = (color: string): string => {
+  if (color.toLowerCase().includes('black')) return 'Negra';
+  if (color.toLowerCase().includes('white')) return 'Blanca';
+  return color; // fallback para otros colores
 };
 
 const DecorationPanel: React.FC<Props> = ({
@@ -98,12 +105,11 @@ const DecorationPanel: React.FC<Props> = ({
             />
             <div className="flex flex-col items-center gap-4 p-6">
               <div className="relative w-64 h-48 rounded-xl overflow-hidden shadow-md">
-                {/* Lógica de la imagen corregida */}
                 <img
                   src={
                     globalDecoration.tablecloth === option.id
                       ? getImageUrl(option.id, globalDecoration.napkinColor)
-                      : option.image // Se muestra la imagen predeterminada si no está seleccionada
+                      : option.image
                   }
                   alt={option.name}
                   className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
@@ -118,7 +124,7 @@ const DecorationPanel: React.FC<Props> = ({
               {globalDecoration.tablecloth === option.id && (
                 <div className="w-full mt-4">
                   <h4 className="text-sm font-semibold text-gray-600 mb-3 uppercase tracking-wider">
-                    Color de Servilleta
+                    Servilleta
                   </h4>
                   <div className="flex gap-3 flex-wrap justify-center">
                     {option.napkins.availableColors.map(color => (
@@ -139,10 +145,16 @@ const DecorationPanel: React.FC<Props> = ({
                         <div
                           className="w-8 h-8 rounded-full border-2 border-gray-300 shadow-sm"
                           style={{
-                            backgroundColor: color.includes('negro') ? '#000000' : color.includes('blanco') ? '#ffffff' : color
+                            backgroundColor: color.includes('negro')
+                              ? '#000000'
+                              : color.includes('blanco')
+                              ? '#ffffff'
+                              : color
                           }}
                         />
-                        <span className="capitalize text-gray-700 font-medium">{color}</span>
+                        <span className="capitalize text-gray-700 font-medium">
+                          {translateColor(color)}
+                        </span>
                       </label>
                     ))}
                   </div>
