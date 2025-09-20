@@ -5,12 +5,12 @@ import Header from './components/Header';
 import TablePlanner from './pages/cliente/mesa/TablePlanner';
 import EventSchedule from './pages/cliente/horarios/EventSchedule';
 import Login from './pages/auth/Login';
-import Observaciones from './pages/cliente/observaciones/Observaciones'; // Nueva importación
+import Observaciones from './pages/cliente/observaciones/Observaciones';
+import GuestsWrapper from './pages/cliente/invitados/GuestsWrapper'; // Añadida importación
 import EventoPage from './pages/evento/[token]';
 import RequireAuth from './components/RequireAuth';
 import ThankYou from './pages/cliente/gracias/ThankYou';
 import InvitadosCena from './pages/cliente/cena/InvitadosCena';
-
 // Catering
 import Catering from './pages/cliente/catering/Catering';
 import ReceptionSelectionMenu1 from './pages/cliente/catering/menu1/ReceptionSelectionMenu1';
@@ -63,17 +63,17 @@ function AppRoutes() {
         <main className="flex-1">
           <Routes>
             {/* Rutas accesibles para todos */}
-            {/* La ruta principal ahora es el login */}
             <Route path="/" element={<Login />} />
             <Route path="/cliente" element={<Home />} />
             <Route path="/evento/:token" element={<EventoPage />} />
             <Route path="/thank-you" element={<ThankYou />} />
 
-            {/* Rutas generales */}
+            {/* Rutas generales para clientes */}
             <Route path="/mesa" element={<TablePlanner />} />
             <Route path="/invitados-cena" element={<InvitadosCena />} />
             <Route path="/horarios" element={<EventSchedule />} />
-            <Route path="/observaciones" element={<Observaciones />} /> {/* Nueva ruta para Observaciones */}
+            <Route path="/invitados" element={<GuestsWrapper />} /> {/* Añadida ruta para invitados */}
+            <Route path="/observaciones" element={<Observaciones />} />
 
             {/* Rutas protegidas por rol */}
             <Route
