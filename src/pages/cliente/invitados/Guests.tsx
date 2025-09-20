@@ -7,7 +7,7 @@ interface Guest {
   id: string;
   first_name: string;
   last_name: string;
-  dni: string;
+  dni: string | null; // El DNI puede ser nulo
   gender: "male" | "female";
   evento_id: string;
 }
@@ -18,7 +18,7 @@ const Guests = () => {
   const [guests, setGuests] = useState<Guest[]>([]);
   const [eventId, setEventId] = useState<string | null>(null);
   const [eventoEstado, setEventoEstado] = useState<'activo' | 'inactivo' | null>(null);
-  const [eventType, setEventType] = useState<string | null>(null); // Nuevo estado para el tipo de evento
+  const [eventType, setEventType] = useState<string | null>(null);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [dni, setDni] = useState("");
@@ -28,7 +28,7 @@ const Guests = () => {
   const [modalMessage, setModalMessage] = useState<string | null>(null);
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
 
-  // Efecto para obtener el eventId usando el token del contexto
+  // Efecto para obtener el eventId y el tipo de evento
   useEffect(() => {
     const fetchEventId = async () => {
       if (!token) {
@@ -39,7 +39,7 @@ const Guests = () => {
 
       const { data, error } = await supabase
         .from('eventos')
-        .select('id, estado, tipo_evento') // Selecciona el tipo de evento
+        .select('id, estado, tipo') // Se corrigió de tipo_evento a tipo
         .eq('token_acceso', token)
         .single();
 
@@ -51,7 +51,7 @@ const Guests = () => {
 
       setEventId(data.id);
       setEventoEstado(data.estado);
-      setEventType(data.tipo_evento); // Guarda el tipo de evento en el estado
+      setEventType(data.tipo);
 
       if (data.estado === 'inactivo') {
         setModalMessage('El evento está inactivo. No podés realizar modificaciones.');
@@ -96,16 +96,16 @@ const Guests = () => {
       return;
     }
 
-    // Validación condicional para el DNI
-    if (eventType === 'fiesta15' && (!firstName.trim() || !lastName.trim() || !dni.trim())) {
-      setModalMessage("Por favor, completa todos los campos (Nombre, Apellido y DNI)");
-      return;
-    } else if (eventType !== 'fiesta15' && (!firstName.trim() || !lastName.trim())) {
-      setModalMessage("Por favor, completa todos los campos (Nombre y Apellido)");
+    if (!firstName.trim() || !lastName.trim()) {
+      setModalMessage("Por favor, completa los campos de nombre y apellido.");
       return;
     }
 
-    // Validación de DNI único solo para fiestas15
+    if (eventType === 'fiesta15' && !dni.trim()) {
+      setModalMessage("Para una Fiesta de 15, el DNI es obligatorio.");
+      return;
+    }
+
     if (eventType === 'fiesta15' && guests.some((g) => g.dni === dni && g.id !== editId)) {
       setModalMessage("El DNI ya está registrado para este evento");
       return;
@@ -113,11 +113,11 @@ const Guests = () => {
 
     const newGender = activeTab === "male" ? "male" : activeTab === "female" ? "female" : gender;
 
-    const newGuest = {
+    const newGuest: Guest = {
       id: editId || crypto.randomUUID(),
       first_name: firstName,
       last_name: lastName,
-      dni: eventType === 'fiesta15' ? dni : '', // Guarda el DNI solo si es fiesta15
+      dni: eventType === 'fiesta15' ? dni : null,
       gender: newGender,
       evento_id: eventId!,
     };
@@ -166,7 +166,7 @@ const Guests = () => {
     setEditId(guest.id);
     setFirstName(guest.first_name);
     setLastName(guest.last_name);
-    setDni(guest.dni);
+    setDni(guest.dni || "");
     setGender(guest.gender);
     setMenuOpenId(null);
   };
@@ -202,12 +202,7 @@ const Guests = () => {
       return;
     }
 
-    const guestsToInsert = guests.map(g => ({
-      ...g,
-      dni: eventType === 'fiesta15' ? g.dni : null // Se asegura de que el DNI sea null si no es fiesta15
-    }));
-
-    const { error } = await supabase.from("invitados").insert(guestsToInsert);
+    const { error } = await supabase.from("invitados").insert(guests);
 
     if (error) {
       console.error("Error al guardar invitados:", error.message);
