@@ -69,18 +69,24 @@ const LunchSelectionMenu4: React.FC = () => {
 
   const toggleItem = (item: string) => {
     console.log('LunchSelectionMenu4 toggleItem - item:', item, 'seleccionadas:', seleccionadas);
+    // Si el ítem ya está seleccionado, lo deselecciona.
     if (seleccionadas.includes(item)) {
       setSeleccionadas(seleccionadas.filter((i) => i !== item));
-    } else if (seleccionadas.length < 2) {
+    }
+    // Si no está seleccionado, verifica si aún no se ha alcanzado el límite de 3.
+    else if (seleccionadas.length < 3) {
       setSeleccionadas([...seleccionadas, item]);
-    } else {
-      alert('Solo podés seleccionar 2 opciones.');
+    }
+    // Si el límite ya fue alcanzado, muestra una alerta.
+    else {
+      alert('Solo podés seleccionar 3 opciones.');
     }
   };
 
   const continuar = async () => {
-    if (seleccionadas.length !== 2) {
-      setError('Debés elegir exactamente 2 opciones.');
+    // Valida que se hayan seleccionado exactamente 3 opciones
+    if (seleccionadas.length !== 3) {
+      setError('Debés elegir exactamente 3 opciones.');
       return;
     }
 
@@ -144,16 +150,15 @@ const LunchSelectionMenu4: React.FC = () => {
           Cena tipo Lunch — Menú 4 (Lunch)
         </h1>
         <p className="text-center text-gray-600 text-lg mb-8">
-          Stands de comidas atendidos por mozos. Elegí <span className="text-[#FF6B35] font-semibold">2 opciones</span>.
+          Stands de comidas atendidos por mozos. Elegí <span className="text-[#FF6B35] font-semibold">3 opciones</span>.
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           {opcionesLunch.map((item) => (
             <div
               key={item}
               onClick={() => toggleItem(item)}
-              className={`p-6 rounded-xl border-2 text-center cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ${
-                seleccionadas.includes(item) ? 'border-[#FF6B35] bg-orange-50' : 'border-gray-200'
-              }`}
+              className={`p-6 rounded-xl border-2 text-center cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ${seleccionadas.includes(item) ? 'border-[#FF6B35] bg-orange-50' : 'border-gray-200'
+                }`}
             >
               <p className="text-base font-medium text-gray-800">{item}</p>
             </div>
@@ -168,10 +173,10 @@ const LunchSelectionMenu4: React.FC = () => {
           </button>
           <button
             onClick={continuar}
-            disabled={seleccionadas.length !== 2}
-            className={`px-6 py-2 rounded-md text-white shadow-md transition-all duration-300 hover:scale-105 ${
-              seleccionadas.length === 2 ? 'bg-[#FF6B35] hover:bg-[#e65a23]' : 'bg-gray-400 cursor-not-allowed'
-            }`}
+            // El botón se habilita solo cuando se seleccionan exactamente 3 opciones
+            disabled={seleccionadas.length !== 3}
+            className={`px-6 py-2 rounded-md text-white shadow-md transition-all duration-300 hover:scale-105 ${seleccionadas.length === 3 ? 'bg-[#FF6B35] hover:bg-[#e65a23]' : 'bg-gray-400 cursor-not-allowed'
+              }`}
           >
             Confirmar y continuar →
           </button>

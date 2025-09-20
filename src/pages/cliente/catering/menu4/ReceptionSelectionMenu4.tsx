@@ -3,30 +3,10 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../../../../supabaseClient';
 import { useUserContext } from '../../../../hooks/useUserContext';
 
-// Define the three selectable options
-const RECEPTION_OPTIONS = [
-  {
-    value: 'bandejeo y mesa de fiambres',
-    title: 'Bandejeo y Mesa de Fiambres',
-    description: 'Bandejeo de canapés fríos, calientes, pinchos de carnes y verduras, empanadas surtidas y una mesa de fiambres y quesos de estación.',
-  },
-  {
-    value: 'isla de sushi',
-    title: 'Isla de Sushi',
-    description: 'Una isla dedicada a la gastronomía japonesa con una variedad de rolls de sushi, nigiri y sashimis frescos preparados al momento.',
-  },
-  {
-    value: 'isla de pastas',
-    title: 'Isla de Pastas',
-    description: 'Una estación de cocina en vivo con diferentes tipos de pastas, salsas a elección y toppings variados para crear un plato personalizado.',
-  },
-];
-
 const ReceptionSelectionMenu4: React.FC = () => {
   const [eventId, setEventId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedOption, setSelectedOption] = useState<string>(RECEPTION_OPTIONS[0].value);
   const { token, setPaso } = useUserContext();
   const navigate = useNavigate();
   const location = useLocation();
@@ -93,7 +73,7 @@ const ReceptionSelectionMenu4: React.FC = () => {
     const { error } = await supabase.rpc('upsert_menu4_formularios', {
       p_event_id: eventId,
       p_paso: 'entrada-menu4',
-      p_datos: { tipo: selectedOption },
+      p_datos: { tipo: 'bandejeo y mesa de fiambres' },
     });
 
     if (error) {
@@ -128,24 +108,14 @@ const ReceptionSelectionMenu4: React.FC = () => {
         </h1>
 
         <p className="text-center text-gray-600 text-base sm:text-lg mb-4">
-          Selecciona una opción para la recepción:
+          La recepción incluye <span className="text-[#FF6B35] font-semibold">bandejeo y mesa de fiambres</span>:
         </p>
 
-        <div className="space-y-4 mb-8">
-          {RECEPTION_OPTIONS.map((option) => (
-            <div
-              key={option.value}
-              onClick={() => setSelectedOption(option.value)}
-              className={`p-4 rounded-xl cursor-pointer transition-all duration-300 ${
-                selectedOption === option.value
-                  ? 'bg-orange-50 border-2 border-[#FF6B35] shadow-md'
-                  : 'bg-gray-100 border border-gray-200 hover:bg-gray-200'
-              }`}
-            >
-              <h3 className="font-semibold text-lg text-gray-800 mb-1">{option.title}</h3>
-              <p className="text-gray-600 text-sm">{option.description}</p>
-            </div>
-          ))}
+        <div className="bg-orange-50 border border-[#FF6B35] rounded-xl px-6 py-5 sm:py-6 mb-8 shadow-sm">
+          <p className="text-gray-700 text-sm sm:text-base leading-relaxed text-center">
+            Bandejeo de canapés fríos, calientes, pinchos de carnes y verduras, empanadas surtidas y una mesa
+            de fiambres y quesos de estación.
+          </p>
         </div>
 
         <div className="flex justify-center flex-col sm:flex-row gap-4 sm:gap-6 mt-4">
