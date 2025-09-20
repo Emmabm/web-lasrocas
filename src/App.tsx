@@ -5,7 +5,7 @@ import Header from './components/Header';
 import TablePlanner from './pages/cliente/mesa/TablePlanner';
 import EventSchedule from './pages/cliente/horarios/EventSchedule';
 import Login from './pages/auth/Login';
-import GuestsWrapper from './pages/cliente/invitados/GuestsWrapper';
+import Observaciones from './pages/cliente/observaciones/Observaciones'; // Nueva importación
 import EventoPage from './pages/evento/[token]';
 import RequireAuth from './components/RequireAuth';
 import ThankYou from './pages/cliente/gracias/ThankYou';
@@ -73,7 +73,7 @@ function AppRoutes() {
             <Route path="/mesa" element={<TablePlanner />} />
             <Route path="/invitados-cena" element={<InvitadosCena />} />
             <Route path="/horarios" element={<EventSchedule />} />
-            <Route path="/invitados" element={<GuestsWrapper />} />
+            <Route path="/observaciones" element={<Observaciones />} /> {/* Nueva ruta para Observaciones */}
 
             {/* Rutas protegidas por rol */}
             <Route

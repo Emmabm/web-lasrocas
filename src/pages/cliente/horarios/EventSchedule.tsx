@@ -33,7 +33,6 @@ const EventSchedule: React.FC = () => {
   const [contact, setContact] = useState('');
   const [editingStaffId, setEditingStaffId] = useState<string | null>(null);
   const [eventId, setEventId] = useState<string | null>(null);
-  const [eventType, setEventType] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [modalMessage, setModalMessage] = useState<string | null>(null);
   const [scheduleError, setScheduleError] = useState<string | null>(null);
@@ -42,7 +41,6 @@ const EventSchedule: React.FC = () => {
   const [eventoEstado, setEventoEstado] = useState<'activo' | 'inactivo' | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [organizadorId, setOrganizadorId] = useState<string | null>(null);
-  // Nuevo estado para el modal de finalización
   const [showFinalizeModal, setShowFinalizeModal] = useState(false);
   const [finalizeModalMessage, setFinalizeModalMessage] = useState('');
 
@@ -76,10 +74,9 @@ const EventSchedule: React.FC = () => {
         }
 
         setEventId(eventData.id);
-        setEventType(eventData.tipo);
+        setEventId(eventData.id);
         setOrganizadorId(eventData.organizador_id);
         setEventoEstado(eventData.estado);
-
         if (eventData.estado === 'inactivo' && (!currentUserId || currentUserId !== eventData.organizador_id)) {
           setModalMessage('El evento está inactivo. No podés realizar modificaciones.');
         }
@@ -286,19 +283,16 @@ const EventSchedule: React.FC = () => {
     const params = new URLSearchParams(location.search);
     const tokenParam = params.get('token');
     if (!eventId || !tokenParam) {
-      setFinalizeModalMessage('No hay datos suficientes para finalizar');
+      setFinalizeModalMessage('No hay datos suficientes para continuar.');
       setShowFinalizeModal(true);
       return;
     }
     if (schedule.length === 0) {
-      setFinalizeModalMessage('Debes agregar al menos un horario antes de finalizar.');
+      setFinalizeModalMessage('Debes agregar al menos un horario antes de continuar.');
       setShowFinalizeModal(true);
       return;
     }
     
-    // **NOTA:** La lógica de borrado y re-inserción de todos los datos no es óptima.
-    // Un `upsert` o un `bulk update` sería más eficiente para evitar perder datos si falla la inserción.
-    // Para este caso, mantenemos la lógica original y nos enfocamos en el modal.
     await supabase.from('schedule_blocks').delete().eq('evento_id', String(eventId));
     await supabase.from('external_staff').delete().eq('evento_id', String(eventId));
 
@@ -335,11 +329,7 @@ const EventSchedule: React.FC = () => {
       return;
     }
     
-    if (eventType?.toLowerCase() === 'fiesta15') {
-      navigate(`/invitados?token=${tokenParam}`);
-    } else {
-      navigate(`/thank-you?token=${tokenParam}`);
-    }
+    navigate(`/invitados?token=${tokenParam}`);
   };
 
   if (loading) return (
@@ -356,7 +346,6 @@ const EventSchedule: React.FC = () => {
 
   return (
     <div className="container mx-auto px-4 py-8 bg-white" style={{ pointerEvents: isBlocked ? 'none' : 'auto' }}>
-      {/* Modal de estado inactivo */}
       {modalMessage && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" style={{ pointerEvents: 'auto' }}>
           <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full">
@@ -372,11 +361,10 @@ const EventSchedule: React.FC = () => {
         </div>
       )}
 
-      {/* Nuevo Modal para errores de finalización */}
       {showFinalizeModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">Error de Finalización</h3>
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">Error al Continuar</h3>
             <p className="text-gray-600 mb-6">{finalizeModalMessage}</p>
             <button
               className="bg-[#FF6B35] text-white px-4 py-2 rounded-md hover:bg-[#FF6B35]/90 w-full transition-colors"
@@ -586,7 +574,7 @@ const EventSchedule: React.FC = () => {
           className={`bg-[#FF6B35] text-white px-6 py-3 rounded-md w-full hover:bg-[#FF6B35]/90 transition-colors ${isBlocked ? 'opacity-50 cursor-not-allowed' : ''}`}
           disabled={isBlocked}
         >
-          Finalizar
+          Continuar
         </button>
       </div>
     </div>

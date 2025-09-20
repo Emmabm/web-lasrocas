@@ -11,6 +11,7 @@ const ThankYou = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 flex items-start justify-center p-4 sm:p-8 mt-8">
       <motion.div
+      
         className="max-w-lg w-full bg-white rounded-2xl shadow-xl p-8 text-center transform transition-all"
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { Home, Utensils, LayoutGrid, Users, Calendar } from 'lucide-react';
+import { Home, Utensils, LayoutGrid, Users, Calendar, FileText } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { useUserContext } from '../hooks/useUserContext';
 
@@ -9,7 +9,7 @@ const Header: React.FC = () => {
   const navigate = useNavigate();
   const { menuSeleccionado, token, setToken, setMenuSeleccionado } = useUserContext();
   const [logueado, setLogueado] = useState(false);
-  const [mostrarInvitados] = useState(true); // siempre true 👈
+  const [mostrarInvitados] = useState(true); // siempre true
 
   const urlToken = new URLSearchParams(location.search).get('token');
 
@@ -162,6 +162,17 @@ const Header: React.FC = () => {
                   </NavLink>
                 </li>
               )}
+              <li>
+                <NavLink
+                  to={getPathWithToken('/observaciones')}
+                  className={({ isActive }) =>
+                    `flex flex-col items-center transition-colors ${isActive ? 'text-white font-medium' : 'text-white/90 hover:text-white'}`
+                  }
+                >
+                  <FileText className="h-5 w-5" />
+                  <span className="text-xs mt-1">Observaciones</span>
+                </NavLink>
+              </li>
             </ul>
           </nav>
         </div>
