@@ -155,7 +155,7 @@ const MainCourseSelectionMenu2: React.FC = () => {
 
   const volver = () => {
     console.log('MainCourseSelectionMenu2 volver - token:', token);
-    navigate(`/catering/menu2/recepcion?token=${token}`);
+    navigate(`/catering/menu2/entrada?token=${token}`);
   };
 
   if (loading) return (

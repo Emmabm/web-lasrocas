@@ -81,7 +81,7 @@ const ReceptionSelectionMenu2 = () => {
       return;
     }
 
-    navigate(`/catering/menu2/main?token=${token}`);
+    navigate(`/catering/menu2/entrada?token=${token}`);
   };
 
   const volver = () => {

@@ -108,7 +108,7 @@ const EntradaSelectionMenu2: React.FC = () => {
   };
 
   const volver = () => {
-    navigate(`/catering?token=${token}`);
+    navigate(`/catering/menu2/recepcion?token=${token}`);
   };
 
   if (loading) return (
