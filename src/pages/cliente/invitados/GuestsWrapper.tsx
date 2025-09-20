@@ -26,7 +26,11 @@ const GuestsWrapper = () => {
     const fetchEventData = async () => {
       // Usar el token del contexto, que ahora siempre estará disponible si llegamos aquí.
       const activeToken = token || urlToken;
-      if (!activeToken) return;
+      if (!activeToken) {
+        setModalMessage("No se proporcionó un token de acceso.");
+        setLoading(false);
+        return;
+      }
 
       const { data, error } = await supabase
         .from("eventos")
@@ -36,17 +40,17 @@ const GuestsWrapper = () => {
 
       if (error || !data) {
         console.error("Error fetching event:", error?.message);
-        setModalMessage("Error al obtener el evento. Por favor, vuelve a iniciar sesión.");
+        setModalMessage("Error al obtener el evento. Por favor, verifica el enlace o inicia sesión nuevamente.");
         setLoading(false);
         return;
       }
 
+      // No redirigimos al panel del organizador, incluso si el usuario es organizador
       if (data.estado === 'inactivo') {
         setModalMessage("El evento está inactivo. No podés realizar modificaciones.");
         setLoading(false);
         return;
       }
-
 
       setLoading(false);
     };
@@ -56,7 +60,7 @@ const GuestsWrapper = () => {
 
   const handleModalClose = () => {
     setModalMessage(null);
-    if (modalMessage?.includes("No se proporcionó un token")) {
+    if (modalMessage?.includes("No se proporcionó un token") || modalMessage?.includes("Error al obtener el evento")) {
       navigate("/cliente");
     }
   };
@@ -66,7 +70,6 @@ const GuestsWrapper = () => {
       <div className="text-center py-8 text-gray-600">Cargando...</div>
     );
   }
-
 
   if (!token) {
     return null;
