@@ -4,7 +4,6 @@ import Home from './pages/cliente/Home';
 import Header from './components/Header';
 import TablePlanner from './pages/cliente/mesa/TablePlanner';
 import EventSchedule from './pages/cliente/horarios/EventSchedule';
-import AdminPanel from './pages/admin/AdminPanel';
 import Login from './pages/auth/Login';
 import GuestsWrapper from './pages/cliente/invitados/GuestsWrapper';
 import EventoPage from './pages/evento/[token]';
@@ -19,6 +18,7 @@ import MainCourseSelectionMenu1 from './pages/cliente/catering/menu1/MainCourseS
 import DessertSelectionMenu1 from './pages/cliente/catering/menu1/DessertSelectionMenu1';
 import KidsMenuSelectionMenu1 from './pages/cliente/catering/menu1/KidsMenuSelectionMenu1';
 import ReceptionSelectionMenu2 from './pages/cliente/catering/menu2/ReceptionSelectionMenu2';
+import EntradaSelectionMenu2 from './pages/cliente/catering/menu2/EntradaSelectionMenu2';
 import MainCourseSelectionMenu2 from './pages/cliente/catering/menu2/MainCourseSelectionMenu2';
 import DessertSelectionMenu2 from './pages/cliente/catering/menu2/DessertSelectionMenu2';
 import KidsMenuSelectionMenu2 from './pages/cliente/catering/menu2/KidsMenuSelectionMenu2';
@@ -77,14 +77,6 @@ function AppRoutes() {
 
             {/* Rutas protegidas por rol */}
             <Route
-              path="/admin"
-              element={
-                <RequireAuth allowedRoles={['admin']}>
-                  <AdminPanel />
-                </RequireAuth>
-              }
-            />
-            <Route
               path="/organizador/panel"
               element={
                 <RequireAuth allowedRoles={['organizador']}>
@@ -114,7 +106,7 @@ function AppRoutes() {
                 </RequireAuth>
               }
             />
-              <Route
+            <Route
               path="/organizador/evento/:id/cena"
               element={
                 <RequireAuth allowedRoles={['organizador']}>
@@ -155,6 +147,7 @@ function AppRoutes() {
             <Route path="/catering/menu1/comidas-baile" element={<DanceFoodSelection />} />
             <Route path="/catering/menu1/resumen" element={<CateringSummary />} />
             <Route path="/catering/menu2/recepcion" element={<ReceptionSelectionMenu2 />} />
+            <Route path="/catering/menu2/entrada" element={<EntradaSelectionMenu2 />} />
             <Route path="/catering/menu2/main" element={<MainCourseSelectionMenu2 />} />
             <Route path="/catering/menu2/postre" element={<DessertSelectionMenu2 />} />
             <Route path="/catering/menu2/kids" element={<KidsMenuSelectionMenu2 />} />

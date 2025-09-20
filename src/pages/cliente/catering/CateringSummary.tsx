@@ -34,7 +34,7 @@ const bebidasIncluidas = {
 const CateringSummary: React.FC = () => {
   const [formularios, setFormularios] = useState<Formulario[]>([]);
   const [eventId, setEventId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const { token: contextToken, setPaso } = useUserContext();
   const navigate = useNavigate();
@@ -96,7 +96,9 @@ const CateringSummary: React.FC = () => {
           return;
         }
 
-        const order = ['entrada', 'plato-principal', 'lunch', 'postre', 'menu-infantil', 'bebidas', 'baile'];
+        const order = menu === 'menu2'
+          ? ['entrada', 'plato-entrada', 'plato-principal', 'postre', 'menu-infantil', 'bebidas', 'baile']
+          : ['entrada', 'plato-principal', 'lunch', 'postre', 'menu-infantil', 'bebidas', 'baile'];
         const sortedFormData = formData.sort((a, b) => {
           const aIndex = order.findIndex((step) => a.paso.includes(step));
           const bIndex = order.findIndex((step) => b.paso.includes(step));
@@ -198,7 +200,8 @@ const CateringSummary: React.FC = () => {
   };
 
   const getSectionTitle = (paso: string) => {
-    if (paso.includes('entrada')) return 'Recepción';
+    if (paso.includes('entrada') && !paso.includes('plato-entrada')) return 'Recepción';
+    if (paso.includes('plato-entrada')) return 'Plato de Entrada';
     if (paso.includes('plato-principal') || paso.includes('lunch')) return 'Plato Principal';
     if (paso.includes('postre')) return 'Postre';
     if (paso.includes('menu-infantil')) return 'Menú Infantil';
@@ -272,11 +275,13 @@ const CateringSummary: React.FC = () => {
       );
     }
 
-    if (paso.includes('entrada')) {
+    if (paso.includes('entrada') || paso.includes('plato-entrada')) {
       return (
         <ul className="text-gray-700 text-base list-disc list-inside">
           {datos.entrada ? (
             <li>{datos.entrada}</li>
+          ) : datos.entradas?.length > 0 ? (
+            datos.entradas.map((opcion: string) => <li key={opcion}>{opcion}</li>)
           ) : datos.opciones?.length > 0 ? (
             datos.opciones.map((opcion: string) => <li key={opcion}>{opcion}</li>)
           ) : datos.tipo ? (
@@ -335,6 +340,8 @@ const CateringSummary: React.FC = () => {
 
   const expectedSections = menu === 'menu4'
     ? ['entrada', 'lunch', 'postre', 'bebidas', 'baile']
+    : menu === 'menu2'
+    ? ['entrada', 'plato-entrada', 'plato-principal', 'postre', 'menu-infantil', 'bebidas', 'baile']
     : ['entrada', 'plato-principal', 'postre', 'menu-infantil', 'bebidas', 'baile'];
 
   const missingSections = expectedSections.filter(
