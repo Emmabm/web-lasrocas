@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../supabaseClient';
+import { FileText } from 'lucide-react';
 import * as XLSX from 'xlsx-js-style';
 
 interface Guest {
@@ -224,6 +225,12 @@ export default function InvitadosResumenOrganizador() {
                 Exportar Invitados a Excel
               </button>
             )}
+            <button
+              onClick={() => navigate(`/organizador/evento/${id}/observaciones`)}
+              className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-6 rounded-lg shadow-md transition-all duration-300 transform hover:scale-105"
+            >
+              <FileText className="w-4 h-4 mr-2 inline-block" /> Ver Resumen Observaciones
+            </button>
           </div>
         </div>
       </div>

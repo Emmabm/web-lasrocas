@@ -6,7 +6,7 @@ import TablePlanner from './pages/cliente/mesa/TablePlanner';
 import EventSchedule from './pages/cliente/horarios/EventSchedule';
 import Login from './pages/auth/Login';
 import Observaciones from './pages/cliente/observaciones/Observaciones';
-import GuestsWrapper from './pages/cliente/invitados/GuestsWrapper'; // Añadida importación
+import GuestsWrapper from './pages/cliente/invitados/GuestsWrapper';
 import EventoPage from './pages/evento/[token]';
 import RequireAuth from './components/RequireAuth';
 import ThankYou from './pages/cliente/gracias/ThankYou';
@@ -40,6 +40,7 @@ import MesasResumenOrganizador from './pages/organizador/MesasResumenOrganizador
 import HorariosResumenOrganizador from './pages/organizador/HorariosResumenOrganizador';
 import InvitadosResumenOrganizador from './pages/organizador/InvitadosResumenOrganizador';
 import CenaResumenOrganizador from './pages/organizador/CenaResumenOrganizador';
+import ObservacionesResumenOrganizador from './pages/organizador/ObservacionesResumenOrganizador';
 
 function App() {
   return (
@@ -72,7 +73,7 @@ function AppRoutes() {
             <Route path="/mesa" element={<TablePlanner />} />
             <Route path="/invitados-cena" element={<InvitadosCena />} />
             <Route path="/horarios" element={<EventSchedule />} />
-            <Route path="/invitados" element={<GuestsWrapper />} /> {/* Añadida ruta para invitados */}
+            <Route path="/invitados" element={<GuestsWrapper />} />
             <Route path="/observaciones" element={<Observaciones />} />
 
             {/* Rutas protegidas por rol */}
@@ -132,6 +133,16 @@ function AppRoutes() {
                 <RequireAuth allowedRoles={['organizador']}>
                   <OrganizadorPanelWrapper>
                     <InvitadosResumenOrganizador />
+                  </OrganizadorPanelWrapper>
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/organizador/evento/:id/observaciones"
+              element={
+                <RequireAuth allowedRoles={['organizador']}>
+                  <OrganizadorPanelWrapper>
+                    <ObservacionesResumenOrganizador />
                   </OrganizadorPanelWrapper>
                 </RequireAuth>
               }
