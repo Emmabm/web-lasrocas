@@ -224,6 +224,12 @@ export default function InvitadosResumenOrganizador() {
                 Exportar Invitados a Excel
               </button>
             )}
+            <button
+              onClick={() => navigate(`/organizador/evento/${id}/observaciones`)}
+              className="bg-[#FF6B35] hover:bg-[#FF6B35]/90 text-white font-semibold py-3 px-6 rounded-lg shadow-md"
+            >
+              Ver Resumen Observaciones
+            </button>
           </div>
         </div>
       </div>

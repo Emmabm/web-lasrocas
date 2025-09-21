@@ -15,6 +15,7 @@ export default function OrganizadorPanel() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [copyStatus, setCopyStatus] = useState<Record<string, 'copiado' | 'copiar'>>({});
+  const [modalMessage, setModalMessage] = useState<string | null>(null);
   const navigate = useNavigate();
 
   // Listener para el estado de autenticación
@@ -39,7 +40,7 @@ export default function OrganizadorPanel() {
   useEffect(() => {
     const fetchEventos = async () => {
       if (!user) return;
-      
+
       const { data, error } = await supabase
         .from('eventos')
         .select('id, tipo, nombre, created_at, token_acceso, estado')
@@ -47,8 +48,7 @@ export default function OrganizadorPanel() {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error al cargar eventos:', error.message);
-        console.error(`Error al cargar eventos: ${error.message}`);
+        setModalMessage(`Error al cargar eventos: ${error.message}`);
         return;
       }
       setEventos(data || []);
@@ -61,18 +61,18 @@ export default function OrganizadorPanel() {
 
   const crearEvento = async () => {
     if (!tipoNuevo || !nombreNuevo) {
-      console.error('Por favor, completa todos los campos');
+      setModalMessage('Por favor, completa todos los campos');
       return;
     }
 
     const tipoValido = tiposValidos.includes(tipoNuevo.toLowerCase());
     if (!tipoValido) {
-      console.error('Tipo de evento inválido');
+      setModalMessage('Tipo de evento inválido');
       return;
     }
 
     if (!user?.id) {
-      console.error('Usuario no identificado');
+      setModalMessage('Usuario no identificado');
       return;
     }
 
@@ -84,7 +84,6 @@ export default function OrganizadorPanel() {
       .single();
 
     if (fetchUserError || !usuario) {
-      // Si el usuario no existe, crearlo.
       const { error: insertUserError } = await supabase.from('usuarios').insert([
         {
           id: user.id,
@@ -94,7 +93,7 @@ export default function OrganizadorPanel() {
         },
       ]);
       if (insertUserError) {
-        console.error('Error al crear el usuario en la tabla "usuarios":', insertUserError);
+        setModalMessage(`Error al crear el usuario: ${insertUserError.message}`);
         return;
       }
     }
@@ -120,8 +119,7 @@ export default function OrganizadorPanel() {
       .select();
 
     if (error) {
-      console.error('Error al crear evento:', error);
-      console.error(`No se pudo crear el evento: ${error.message}`);
+      setModalMessage(`No se pudo crear el evento: ${error.message}`);
       return;
     }
 
@@ -130,22 +128,20 @@ export default function OrganizadorPanel() {
     setNombreNuevo('');
 
     const clientLink = `${window.location.origin}/cliente?token=${token}`;
-    console.log(`✅ Evento creado\n\nToken generado:\n${token}\n\nLink para el cliente:\n${clientLink}`);
     await navigator.clipboard.writeText(clientLink);
-    console.log('📋 Link copiado al portapapeles.');
+    setModalMessage(`Evento creado con éxito. Link copiado: ${clientLink}`);
   };
 
   const copiarLink = async (token: string, eventId: string) => {
     try {
       await navigator.clipboard.writeText(`${window.location.origin}/cliente?token=${token}`);
-      console.log('✅ Link copiado');
       setCopyStatus(prev => ({ ...prev, [eventId]: 'copiado' }));
 
       setTimeout(() => {
         setCopyStatus(prev => ({ ...prev, [eventId]: 'copiar' }));
       }, 2000);
     } catch (err) {
-      console.error('Error al copiar el link:', err);
+      setModalMessage('Error al copiar el link.');
     }
   };
 
@@ -162,12 +158,12 @@ export default function OrganizadorPanel() {
   const guardarCambios = async (id: string) => {
     try {
       if (!nombreEditado.trim()) {
-        console.error('El nombre no puede estar vacío');
+        setModalMessage('El nombre no puede estar vacío');
         return;
       }
 
       if (!user?.id) {
-        console.error('No se encontró usuario autenticado');
+        setModalMessage('No se encontró usuario autenticado');
         return;
       }
 
@@ -178,8 +174,7 @@ export default function OrganizadorPanel() {
         .eq('organizador_id', user.id);
 
       if (error) {
-        console.error('Error al editar en Supabase:', error);
-        console.error(`Error al editar: ${error.message}`);
+        setModalMessage(`Error al editar: ${error.message}`);
         return;
       }
 
@@ -187,55 +182,88 @@ export default function OrganizadorPanel() {
       setEditandoId(null);
       setNombreEditado('');
     } catch (err) {
-      console.error('Error inesperado en guardarCambios:', err);
-      console.error('Error inesperado al editar el evento');
+      setModalMessage('Error inesperado al editar el evento');
     }
   };
 
   const eliminarEvento = async (id: string) => {
-    console.log('¿Estás seguro de eliminar este evento? Esta acción no se puede deshacer.');
+    if (!window.confirm('¿Estás seguro de eliminar este evento? Esta acción no se puede deshacer.')) {
+      return;
+    }
+
     try {
+      // Eliminar registros dependientes de schedule_blocks
+      const { error: errorScheduleBlocks } = await supabase
+        .from('schedule_blocks')
+        .delete()
+        .eq('evento_id', id);
+      if (errorScheduleBlocks) {
+        setModalMessage(`Error al eliminar bloques de horarios: ${errorScheduleBlocks.message}`);
+        return;
+      }
+
+      // Eliminar registros dependientes de selecciones_evento
       const { error: errorSelecciones } = await supabase
         .from('selecciones_evento')
         .delete()
         .eq('evento_id', id);
       if (errorSelecciones) {
-        console.error('Error al eliminar selecciones_evento:', errorSelecciones);
-        console.error(`Error al eliminar selecciones: ${errorSelecciones.message}`);
+        setModalMessage(`Error al eliminar selecciones: ${errorSelecciones.message}`);
         return;
       }
 
+      // Eliminar registros dependientes de eventos_resumen
       const { error: errorResumen } = await supabase
         .from('eventos_resumen')
         .delete()
         .eq('event_id', id);
       if (errorResumen) {
-        console.error('Error al eliminar eventos_resumen:', errorResumen);
-        console.error(`Error al eliminar resumen: ${errorResumen.message}`);
+        setModalMessage(`Error al eliminar resumen: ${errorResumen.message}`);
         return;
       }
 
+      // Eliminar registros dependientes de observaciones_generales
+      const { error: errorObservaciones } = await supabase
+        .from('observaciones_generales')
+        .delete()
+        .eq('evento_id', id);
+      if (errorObservaciones) {
+        setModalMessage(`Error al eliminar observaciones: ${errorObservaciones.message}`);
+        return;
+      }
+
+      // Eliminar registros dependientes de invitados
+      const { error: errorInvitados } = await supabase
+        .from('invitados')
+        .delete()
+        .eq('evento_id', id);
+      if (errorInvitados) {
+        setModalMessage(`Error al eliminar invitados: ${errorInvitados.message}`);
+        return;
+      }
+
+      // Eliminar el evento
       const { error } = await supabase
         .from('eventos')
         .delete()
         .eq('id', id)
         .eq('organizador_id', user?.id);
       if (error) {
-        console.error('Error al eliminar evento:', error);
-        console.error(`Error al eliminar evento: ${error.message}`);
+        setModalMessage(`Error al eliminar evento: ${error.message}`);
         return;
       }
 
       setEventos(eventos.filter((e) => e.id !== id));
+      setModalMessage('Evento eliminado con éxito');
     } catch (err) {
-      console.error('Error inesperado al eliminar el evento:', err);
+      setModalMessage('Error inesperado al eliminar el evento');
     }
   };
 
   const toggleEventStatus = async (id: string, currentStatus: 'activo' | 'inactivo') => {
     try {
       if (!user?.id) {
-        console.error('No se encontró usuario autenticado');
+        setModalMessage('No se encontró usuario autenticado');
         return;
       }
 
@@ -247,16 +275,14 @@ export default function OrganizadorPanel() {
         .eq('organizador_id', user.id);
 
       if (error) {
-        console.error('Error al cambiar estado del evento:', error);
-        console.error(`Error al cambiar estado: ${error.message}`);
+        setModalMessage(`Error al cambiar estado: ${error.message}`);
         return;
       }
 
       setEventos(eventos.map((e) => (e.id === id ? { ...e, estado: newStatus } : e)));
-      console.log(`Evento ${newStatus === 'activo' ? 'activado' : 'desactivado'} correctamente`);
+      setModalMessage(`Evento ${newStatus === 'activo' ? 'activado' : 'desactivado'} correctamente`);
     } catch (err) {
-      console.error('Error inesperado en toggleEventStatus:', err);
-      console.error('Error inesperado al cambiar el estado del evento');
+      setModalMessage('Error inesperado al cambiar el estado del evento');
     }
   };
 
@@ -271,6 +297,21 @@ export default function OrganizadorPanel() {
   return (
     <div className="min-h-screen bg-gray-100 p-6">
       <div className="max-w-6xl mx-auto">
+        {modalMessage && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">Atención</h3>
+              <p className="text-gray-600 mb-6">{modalMessage}</p>
+              <button
+                className="bg-[#FF6B35] text-white px-4 py-2 rounded-md hover:bg-[#FF6B35]/90 w-full"
+                onClick={() => setModalMessage(null)}
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        )}
+
         <h1 className="text-3xl font-bold text-gray-800 mb-8 flex items-center">
           <span className="mr-2">🎉</span> Panel de Organizador
         </h1>
