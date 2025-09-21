@@ -3,10 +3,10 @@ export interface Position {
   y: number;
 }
 
-// Se elimina la interfaz `Guest` ya que no se usa con la nueva lógica.
+
 
 export interface GuestGroup {
-  id?: string; // Nuevo: para identificar cada grupo de forma única en el frontend
+  id?: string; 
   name: string;
   numAdults: number;
   numChildren: number;

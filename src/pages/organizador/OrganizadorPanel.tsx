@@ -195,41 +195,41 @@ export default function OrganizadorPanel() {
   const eliminarEvento = async (id: string) => {
     console.log('¿Estás seguro de eliminar este evento? Esta acción no se puede deshacer.');
     try {
-        const { error: errorSelecciones } = await supabase
-          .from('selecciones_evento')
-          .delete()
-          .eq('evento_id', id);
-        if (errorSelecciones) {
-          console.error('Error al eliminar selecciones_evento:', errorSelecciones);
-          console.error(`Error al eliminar selecciones: ${errorSelecciones.message}`);
-          return;
-        }
-
-        const { error: errorResumen } = await supabase
-          .from('eventos_resumen')
-          .delete()
-          .eq('event_id', id);
-        if (errorResumen) {
-          console.error('Error al eliminar eventos_resumen:', errorResumen);
-          console.error(`Error al eliminar resumen: ${errorResumen.message}`);
-          return;
-        }
-
-        const { error } = await supabase
-          .from('eventos')
-          .delete()
-          .eq('id', id)
-          .eq('organizador_id', user?.id);
-        if (error) {
-          console.error('Error al eliminar evento:', error);
-          console.error(`Error al eliminar evento: ${error.message}`);
-          return;
-        }
-
-        setEventos(eventos.filter((e) => e.id !== id));
-      } catch (err) {
-        console.error('Error inesperado al eliminar el evento:', err);
+      const { error: errorSelecciones } = await supabase
+        .from('selecciones_evento')
+        .delete()
+        .eq('evento_id', id);
+      if (errorSelecciones) {
+        console.error('Error al eliminar selecciones_evento:', errorSelecciones);
+        console.error(`Error al eliminar selecciones: ${errorSelecciones.message}`);
+        return;
       }
+
+      const { error: errorResumen } = await supabase
+        .from('eventos_resumen')
+        .delete()
+        .eq('event_id', id);
+      if (errorResumen) {
+        console.error('Error al eliminar eventos_resumen:', errorResumen);
+        console.error(`Error al eliminar resumen: ${errorResumen.message}`);
+        return;
+      }
+
+      const { error } = await supabase
+        .from('eventos')
+        .delete()
+        .eq('id', id)
+        .eq('organizador_id', user?.id);
+      if (error) {
+        console.error('Error al eliminar evento:', error);
+        console.error(`Error al eliminar evento: ${error.message}`);
+        return;
+      }
+
+      setEventos(eventos.filter((e) => e.id !== id));
+    } catch (err) {
+      console.error('Error inesperado al eliminar el evento:', err);
+    }
   };
 
   const toggleEventStatus = async (id: string, currentStatus: 'activo' | 'inactivo') => {
@@ -395,23 +395,16 @@ export default function OrganizadorPanel() {
                             </>
                           )}
                         </button>
-                        {['catering', 'mesas', 'cena', 'horarios'].map((path) => (
+                        {['catering', 'mesas', 'cena', 'horarios', 'invitados', 'observaciones'].map((path) => (
                           <a
                             key={path}
                             href={`/organizador/evento/${e.id}/${path}`}
                             className="flex items-center px-3 py-1 border border-gray-300 text-gray-700 rounded-lg hover:bg-orange-500 hover:text-white transition-colors"
+                            title={`Ver ${path.charAt(0).toUpperCase() + path.slice(1)}`}
                           >
                             {path.charAt(0).toUpperCase() + path.slice(1)}
                           </a>
                         ))}
-                        {e.tipo.toLowerCase() === 'fiesta15' && (
-                          <a
-                            href={`/organizador/evento/${e.id}/invitados`}
-                            className="flex items-center px-3 py-1 border border-gray-300 text-gray-700 rounded-lg hover:bg-orange-500 hover:text-white transition-colors"
-                          >
-                            Invitados
-                          </a>
-                        )}
                         {editandoId !== e.id && (
                           <button
                             onClick={() => iniciarEdicion(e.id, e.nombre)}

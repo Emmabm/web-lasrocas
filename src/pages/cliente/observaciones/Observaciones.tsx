@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { supabase } from "../../../supabaseClient";
 import { useUserContext } from '../../../hooks/useUserContext';
 
+
 // Define a type for a single observation
 interface Observacion {
   id: string;
@@ -226,7 +227,7 @@ const Observaciones = () => {
 
       <div className="bg-white rounded-xl shadow-lg p-6 sm:p-8">
         <h2 className="text-3xl font-bold text-gray-800 mb-6 flex items-center">
-          📝 Observaciones del Evento
+          Observaciones del Evento
         </h2>
         <p className="text-gray-600 mb-6">
           Utiliza este espacio para añadir cualquier detalle o nota especial que consideres importante para tu evento.
@@ -278,20 +279,24 @@ const Observaciones = () => {
                     </p>
                     <p className="text-gray-700 whitespace-pre-wrap">{obs.contenido}</p>
                   </div>
-                  <div className="flex space-x-2 mt-1">
+                  <div className="flex space-x-3 mt-1">
                     <button
                       onClick={() => handleEditClick(obs)}
                       disabled={isBlocked}
-                      className={`text-blue-500 hover:text-blue-700 ${isBlocked && 'opacity-50 cursor-not-allowed'}`}
+                      className={`text-blue-600 hover:text-blue-800 transition-colors ${
+                        isBlocked ? 'opacity-50 cursor-not-allowed' : ''
+                      }`}
+                      title="Editar observación"
                     >
-                      ✏️
                     </button>
                     <button
                       onClick={() => handleDeleteObservation(obs.id)}
                       disabled={isBlocked}
-                      className={`text-red-500 hover:text-red-700 ${isBlocked && 'opacity-50 cursor-not-allowed'}`}
+                      className={`text-red-600 hover:text-red-800 transition-colors ${
+                        isBlocked ? 'opacity-50 cursor-not-allowed' : ''
+                      }`}
+                      title="Eliminar observación"
                     >
-                      🗑️
                     </button>
                   </div>
                 </li>
