@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { supabase } from "../../../supabaseClient";
 import { useUserContext } from '../../../hooks/useUserContext';
-
+import { Pencil, Trash2 } from 'lucide-react';
 
 // Define a type for a single observation
 interface Observacion {
@@ -288,6 +288,7 @@ const Observaciones = () => {
                       }`}
                       title="Editar observación"
                     >
+                      <Pencil className="w-5 h-5" />
                     </button>
                     <button
                       onClick={() => handleDeleteObservation(obs.id)}
@@ -297,6 +298,7 @@ const Observaciones = () => {
                       }`}
                       title="Eliminar observación"
                     >
+                      <Trash2 className="w-5 h-5" />
                     </button>
                   </div>
                 </li>

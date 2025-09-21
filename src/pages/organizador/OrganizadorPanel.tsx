@@ -192,6 +192,16 @@ export default function OrganizadorPanel() {
     }
 
     try {
+      // Eliminar registros dependientes de external_staff
+      const { error: errorExternalStaff } = await supabase
+        .from('external_staff')
+        .delete()
+        .eq('evento_id', id);
+      if (errorExternalStaff) {
+        setModalMessage(`Error al eliminar personal externo: ${errorExternalStaff.message}`);
+        return;
+      }
+
       // Eliminar registros dependientes de schedule_blocks
       const { error: errorScheduleBlocks } = await supabase
         .from('schedule_blocks')
