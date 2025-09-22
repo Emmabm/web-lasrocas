@@ -6,7 +6,7 @@ import * as XLSX from "xlsx-js-style";
 interface GeneralObservation {
   id: string;
   evento_id: string;
-  contenido: string | null; // ⚡ nombre correcto del campo
+  contenido: string | null;
   created_at: string | null;
 }
 
@@ -34,10 +34,9 @@ export default function ObservacionesResumenOrganizador() {
         return;
       }
 
-      // Verificar que el organizador es el dueño del evento
       const { data: evento, error: eventoError } = await supabase
         .from("eventos")
-        .select("organizador_id, nombre")
+        .select("organizador_id")
         .eq("id", id)
         .single();
 
@@ -53,7 +52,6 @@ export default function ObservacionesResumenOrganizador() {
         return;
       }
 
-      // Traer las observaciones
       const { data: observationsData, error: observationsError } = await supabase
         .from("observaciones_generales")
         .select("*")
@@ -88,22 +86,6 @@ export default function ObservacionesResumenOrganizador() {
 
     const sheet = XLSX.utils.aoa_to_sheet(data);
     sheet["!cols"] = [{ wch: 80 }];
-
-    // Opcional: estilos básicos
-    const range = XLSX.utils.decode_range(sheet["!ref"]!);
-    for (let R = range.s.r; R <= range.e.r; ++R) {
-      for (let C = range.s.c; C <= range.e.c; ++C) {
-        const cellRef = XLSX.utils.encode_cell({ r: R, c: C });
-        if (!sheet[cellRef]) continue;
-
-        sheet[cellRef].s = {
-          alignment: { vertical: "top", horizontal: "left", wrapText: true },
-          font: { sz: 11, color: { rgb: "000000" } },
-          fill: { fgColor: { rgb: R === 0 ? "FFF9C4" : "FFFFFF" } },
-        };
-      }
-    }
-
     XLSX.utils.book_append_sheet(workbook, sheet, "Observaciones");
     const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
     const blob = new Blob([excelBuffer], { type: "application/octet-stream" });
@@ -122,12 +104,12 @@ export default function ObservacionesResumenOrganizador() {
   }, [id]);
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center bg-white">Cargando...</div>;
+    return <div className="min-h-screen flex items-center justify-center bg-white text-gray-600">Cargando...</div>;
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 p-6 sm:p-8">
-      <div className="max-w-3xl mx-auto">
+    <div className="min-h-screen p-6 sm:p-8">
+      <div className="max-w-4xl mx-auto">
         {modalMessage && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full">
@@ -143,27 +125,49 @@ export default function ObservacionesResumenOrganizador() {
           </div>
         )}
 
-        <h1 className="text-4xl font-extrabold text-gray-900 mb-8 bg-orange-100 rounded-lg p-4 shadow-md">
+        <h1 className="text-4xl font-extrabold text-gray-900 mb-8 bg-orange-100 rounded-lg p-4 shadow-md text-center">
           Observaciones Generales
         </h1>
 
-        <div className="bg-white rounded-2xl shadow-xl p-6">
-          <p className="text-gray-700 whitespace-pre-line">
-            {observations.map(o => o.contenido).filter(Boolean).join("\n") || "Sin observaciones."}
-          </p>
-        </div>
+        {observations.length === 0 ? (
+          <div className="bg-white rounded-2xl shadow-xl p-6 text-center text-gray-500 italic">
+            Aún no hay observaciones guardadas.
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {observations.map(obs => (
+              <div
+                key={obs.id}
+                className="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-[#FF6B35] hover:shadow-2xl transition-shadow duration-300"
+              >
+                {obs.created_at && (
+                  <p className="text-gray-500 text-sm mb-2">
+                    {new Date(obs.created_at).toLocaleString("es-AR", {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </p>
+                )}
+                <p className="text-gray-800 text-base whitespace-pre-line">{obs.contenido}</p>
+              </div>
+            ))}
+          </div>
+        )}
 
         <div className="flex flex-col sm:flex-row justify-between gap-4 mt-8">
           <button
             onClick={() => navigate("/organizador/panel")}
-            className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-6 rounded-lg shadow-md"
+            className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-6 rounded-lg shadow-md transition-all"
           >
             ← Volver al panel
           </button>
           {observations.length > 0 && (
             <button
               onClick={exportToExcel}
-              className="bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-lg shadow-md"
+              className="bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-lg shadow-md transition-all"
             >
               Exportar a Excel
             </button>
