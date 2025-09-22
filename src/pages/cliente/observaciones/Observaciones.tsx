@@ -32,7 +32,7 @@ const Observaciones = () => {
       .order('created_at', { ascending: false });
 
     if (error) {
-      setModalMessage(`Error al cargar observaciones: ${error.message}`);
+      console.error(`Error al cargar observaciones: ${error.message}`);
     } else {
       setObservacionesList(data || []);
     }
@@ -51,14 +51,14 @@ const Observaciones = () => {
         console.log('Observaciones.tsx - Persistiendo token desde URL:', urlToken);
         setToken(urlToken);
       } else if (!token && !urlToken) {
-        setModalMessage("Error: No se proporcionó un token de acceso.");
+        console.error("Error: No se proporcionó un token de acceso.");
         setIsLoading(false);
         return;
       }
 
       const activeToken = token || urlToken;
       if (!activeToken) {
-        setModalMessage("Error: No se proporcionó un token de acceso.");
+        console.error("Error: No se proporcionó un token de acceso.");
         setIsLoading(false);
         return;
       }
@@ -71,7 +71,7 @@ const Observaciones = () => {
 
       if (error || !data) {
         console.error('Observaciones.tsx - Error fetching event:', error?.message);
-        setModalMessage(`Error al obtener datos del evento: ${error?.message || 'No se encontró el evento.'}`);
+        console.error(`Error al obtener datos del evento: ${error?.message || 'No se encontró el evento.'}`);
         setIsLoading(false);
         return;
       }
@@ -99,12 +99,12 @@ const Observaciones = () => {
     }
 
     if (!eventId) {
-      setModalMessage('Error: No se ha podido obtener el ID del evento.');
+      console.error('Error: No se ha podido obtener el ID del evento.');
       return;
     }
     
     if (nuevaObservacion.trim() === "") {
-      setModalMessage("Por favor, escribe una observación para guardar.");
+      console.error("Por favor, escribe una observación para guardar.");
       return;
     }
 
@@ -115,9 +115,8 @@ const Observaciones = () => {
 
     if (error) {
       console.error("Error al guardar observaciones:", error.message);
-      setModalMessage(`Error al guardar: ${error.message}`);
     } else {
-      setModalMessage("Observación guardada correctamente.");
+      console.log("Observación guardada correctamente.");
       setObservacionesList(prev => [...data, ...prev]);
       setNuevaObservacion("");
     }
@@ -136,10 +135,10 @@ const Observaciones = () => {
         .eq('id', obsId);
 
       if (error) {
-        setModalMessage(`Error al borrar: ${error.message}`);
+        console.error(`Error al borrar: ${error.message}`);
       } else {
+        console.log("Observación borrada correctamente.");
         setObservacionesList(observacionesList.filter(obs => obs.id !== obsId));
-        setModalMessage("Observación borrada correctamente.");
       }
     }
   };
@@ -161,7 +160,7 @@ const Observaciones = () => {
     }
 
     if (!editingId || nuevaObservacion.trim() === "") {
-      setModalMessage("No hay observación para actualizar.");
+      console.error("No hay observación para actualizar.");
       return;
     }
 
@@ -171,9 +170,9 @@ const Observaciones = () => {
       .eq('id', editingId);
 
     if (error) {
-      setModalMessage(`Error al actualizar: ${error.message}`);
+      console.error(`Error al actualizar: ${error.message}`);
     } else {
-      setModalMessage("Observación actualizada correctamente.");
+      console.log("Observación actualizada correctamente.");
       setObservacionesList(prev => 
         prev.map(obs => obs.id === editingId ? { ...obs, contenido: nuevaObservacion } : obs)
       );
@@ -189,7 +188,7 @@ const Observaciones = () => {
     }
 
     if (!token) {
-      setModalMessage('Error: No se encontró el token de acceso.');
+      console.error('Error: No se encontró el token de acceso.');
       return;
     }
 
@@ -230,7 +229,7 @@ const Observaciones = () => {
           Observaciones del Evento
         </h2>
         <p className="text-gray-600 mb-6">
-          Utiliza este espacio para añadir cualquier detalle o nota especial que consideres importante para tu evento.
+          Utiliza este espacio para añadir cualquier detalle o nota especial sobre tu evento. Puedes incluir información del catering, distribución de mesas, horarios, baile, decoración u otros aspectos importantes que desees destacar.
         </p>
         
         <div className="mb-6">

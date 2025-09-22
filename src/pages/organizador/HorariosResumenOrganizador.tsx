@@ -205,10 +205,10 @@ export default function HorariosResumenOrganizador() {
 
         <div className="flex flex-col sm:flex-row justify-between gap-4">
           <button
-            onClick={() => navigate(`/organizador/evento/${id}/mesas`)}
+            onClick={() => navigate("/organizador/panel")}
             className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-6 rounded-lg shadow-md transition-all duration-300 transform hover:scale-105"
           >
-            ← Volver a mesas
+            ← Volver al panel
           </button>
 
           <div className="flex flex-col sm:flex-row gap-4">
@@ -216,7 +216,7 @@ export default function HorariosResumenOrganizador() {
               onClick={exportToExcel}
               className="bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-lg shadow-md transition-all duration-300 transform hover:scale-105"
             >
-              Exportar a Excel
+              Exportar a Excel 
             </button>
 
             <button

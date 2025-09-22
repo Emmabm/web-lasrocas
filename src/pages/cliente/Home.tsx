@@ -4,7 +4,6 @@ import { supabase } from '../../supabaseClient';
 import { useUserContext } from '../../hooks/useUserContext';
 
 const Home: React.FC = () => {
-  const [eventType, setEventType] = useState<string | null>(null);
   const [eventName, setEventName] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -45,7 +44,6 @@ const Home: React.FC = () => {
         return;
       }
 
-      setEventType(data?.tipo || null);
       setEventName(data?.nombre || 'Evento');
       setPaso('cliente'); // Establecer paso inicial
       setLoading(false);
@@ -113,22 +111,38 @@ const Home: React.FC = () => {
             <div className="w-10 h-10 bg-[#FF6B35] text-white rounded-full flex items-center justify-center mb-4">
               3
             </div>
+            <h3 className="text-lg font-medium mb-2">Organiza la Cena</h3>
+            <p className="text-center text-gray-600">
+              Si elegiste el menú 4, asigná los invitados a la cena.
+            </p>
+          </div>
+          <div className="flex flex-col items-center">
+            <div className="w-10 h-10 bg-[#FF6B35] text-white rounded-full flex items-center justify-center mb-4">
+              4
+            </div>
             <h3 className="text-lg font-medium mb-2">Organiza los Horarios</h3>
             <p className="text-center text-gray-600">
               Programa las actividades y tiempos clave de tu evento.
             </p>
           </div>
-          {eventType === 'fiesta15' && (
-            <div className="flex flex-col items-center">
-              <div className="w-10 h-10 bg-[#FF6B35] text-white rounded-full flex items-center justify-center mb-4">
-                4
-              </div>
-              <h3 className="text-lg font-medium mb-2">Gestiona tus Invitados</h3>
-              <p className="text-center text-gray-600">
-                Administra la lista de invitados para tu fiesta de 15.
-              </p>
+          <div className="flex flex-col items-center">
+            <div className="w-10 h-10 bg-[#FF6B35] text-white rounded-full flex items-center justify-center mb-4">
+              5
             </div>
-          )}
+            <h3 className="text-lg font-medium mb-2">Gestiona el Baile (Invitados)</h3>
+            <p className="text-center text-gray-600">
+              Administra la lista de invitados para el baile de tu evento.
+            </p>
+          </div>
+          <div className="flex flex-col items-center">
+            <div className="w-10 h-10 bg-[#FF6B35] text-white rounded-full flex items-center justify-center mb-4">
+              6
+            </div>
+            <h3 className="text-lg font-medium mb-2">Añade Observaciones</h3>
+            <p className="text-center text-gray-600">
+              Ingresa notas o detalles especiales para tu evento.
+            </p>
+          </div>
         </div>
       </section>
     </div>
