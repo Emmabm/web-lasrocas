@@ -73,31 +73,67 @@ export default function ObservacionesResumenOrganizador() {
   };
 
   const exportToExcel = () => {
-    if (observations.length === 0) {
-      setModalMessage("No hay datos para exportar.");
-      return;
-    }
+  if (observations.length === 0) {
+    setModalMessage("No hay datos para exportar.");
+    return;
+  }
 
-    const workbook = XLSX.utils.book_new();
-    const data: any[][] = [["Observaciones Generales del Evento"], []];
+  const workbook = XLSX.utils.book_new();
 
-    const text = observations.map(o => o.contenido).filter(Boolean).join("\n") || "Sin observaciones.";
-    data.push([text]);
 
-    const sheet = XLSX.utils.aoa_to_sheet(data);
-    sheet["!cols"] = [{ wch: 80 }];
-    XLSX.utils.book_append_sheet(workbook, sheet, "Observaciones");
-    const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
-    const blob = new Blob([excelBuffer], { type: "application/octet-stream" });
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `Observaciones_Evento_${id}.xlsx`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(url);
+  const data: any[][] = [];
+
+  
+  data.push(["Observaciones Generales del Evento"]);
+
+  
+  data.push([]);
+
+ 
+  observations.forEach(obs => {
+    const fecha = obs.created_at
+      ? new Date(obs.created_at).toLocaleString("es-AR", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      : "";
+    data.push([fecha, obs.contenido || "Sin observaciones"]);
+  });
+
+  const sheet = XLSX.utils.aoa_to_sheet(data);
+
+  sheet["A1"].s = {
+    fill: { fgColor: { rgb: "FFFF00" } }, 
+    font: { bold: true },
+    alignment: { horizontal: "center" },
   };
+
+  
+  const lastCol = 2; 
+  sheet["!merges"] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: lastCol - 1 } }];
+
+  
+  sheet["!cols"] = [
+    { wch: 25 }, 
+    { wch: 80 }, 
+  ];
+
+  XLSX.utils.book_append_sheet(workbook, sheet, "Observaciones");
+
+  const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+  const blob = new Blob([excelBuffer], { type: "application/octet-stream" });
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `Observaciones_Evento_${id}.xlsx`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  window.URL.revokeObjectURL(url);
+};
 
   useEffect(() => {
     if (id) fetchObservations();
@@ -125,7 +161,7 @@ export default function ObservacionesResumenOrganizador() {
           </div>
         )}
 
-        <h1 className="text-4xl font-extrabold text-gray-900 mb-8 bg-orange-100 rounded-lg p-4 shadow-md text-center">
+        <h1 className="text-4xl font-extrabold text-gray-900 mb-8 flex items-center bg-orange-100 rounded-lg p-4 shadow-md">
           Observaciones Generales
         </h1>
 
