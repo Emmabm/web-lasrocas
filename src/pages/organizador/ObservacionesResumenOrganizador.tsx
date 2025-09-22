@@ -6,7 +6,8 @@ import * as XLSX from "xlsx-js-style";
 interface GeneralObservation {
   id: string;
   evento_id: string;
-  general_observations: string | null;
+  contenido: string | null; // ⚡ nombre correcto del campo
+  created_at: string | null;
 }
 
 export default function ObservacionesResumenOrganizador() {
@@ -33,9 +34,10 @@ export default function ObservacionesResumenOrganizador() {
         return;
       }
 
+      // Verificar que el organizador es el dueño del evento
       const { data: evento, error: eventoError } = await supabase
         .from("eventos")
-        .select("organizador_id")
+        .select("organizador_id, nombre")
         .eq("id", id)
         .single();
 
@@ -51,10 +53,12 @@ export default function ObservacionesResumenOrganizador() {
         return;
       }
 
+      // Traer las observaciones
       const { data: observationsData, error: observationsError } = await supabase
         .from("observaciones_generales")
         .select("*")
-        .eq("evento_id", id);
+        .eq("evento_id", id)
+        .order("created_at", { ascending: true });
 
       if (observationsError) {
         setModalMessage(`Error al cargar observaciones: ${observationsError.message}`);
@@ -77,13 +81,28 @@ export default function ObservacionesResumenOrganizador() {
     }
 
     const workbook = XLSX.utils.book_new();
-    const data = [["Observaciones Generales del Evento"], []];
+    const data: any[][] = [["Observaciones Generales del Evento"], []];
 
-    const text = observations.map(o => o.general_observations).filter(Boolean).join("\n") || "Sin observaciones.";
+    const text = observations.map(o => o.contenido).filter(Boolean).join("\n") || "Sin observaciones.";
     data.push([text]);
 
     const sheet = XLSX.utils.aoa_to_sheet(data);
     sheet["!cols"] = [{ wch: 80 }];
+
+    // Opcional: estilos básicos
+    const range = XLSX.utils.decode_range(sheet["!ref"]!);
+    for (let R = range.s.r; R <= range.e.r; ++R) {
+      for (let C = range.s.c; C <= range.e.c; ++C) {
+        const cellRef = XLSX.utils.encode_cell({ r: R, c: C });
+        if (!sheet[cellRef]) continue;
+
+        sheet[cellRef].s = {
+          alignment: { vertical: "top", horizontal: "left", wrapText: true },
+          font: { sz: 11, color: { rgb: "000000" } },
+          fill: { fgColor: { rgb: R === 0 ? "FFF9C4" : "FFFFFF" } },
+        };
+      }
+    }
 
     XLSX.utils.book_append_sheet(workbook, sheet, "Observaciones");
     const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
@@ -100,7 +119,7 @@ export default function ObservacionesResumenOrganizador() {
 
   useEffect(() => {
     if (id) fetchObservations();
-  }, [id, navigate]);
+  }, [id]);
 
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center bg-white">Cargando...</div>;
@@ -116,10 +135,7 @@ export default function ObservacionesResumenOrganizador() {
               <p className="text-gray-600 mb-6">{modalMessage}</p>
               <button
                 className="bg-[#FF6B35] text-white px-4 py-2 rounded-md hover:bg-[#FF6B35]/90 w-full"
-                onClick={() => {
-                  setModalMessage(null);
-                  navigate("/organizador/panel");
-                }}
+                onClick={() => setModalMessage(null)}
               >
                 Cerrar
               </button>
@@ -133,7 +149,7 @@ export default function ObservacionesResumenOrganizador() {
 
         <div className="bg-white rounded-2xl shadow-xl p-6">
           <p className="text-gray-700 whitespace-pre-line">
-            {observations.map(o => o.general_observations).filter(Boolean).join("\n") || "Sin observaciones."}
+            {observations.map(o => o.contenido).filter(Boolean).join("\n") || "Sin observaciones."}
           </p>
         </div>
 
