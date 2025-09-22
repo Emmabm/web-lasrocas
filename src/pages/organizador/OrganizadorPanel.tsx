@@ -323,7 +323,7 @@ export default function OrganizadorPanel() {
         )}
 
         <h1 className="text-3xl font-bold text-gray-800 mb-8 flex items-center">
-          <span className="mr-2">🎉</span> Panel de Organizador
+          <span className="mr-2"></span> Panel de Organizador
         </h1>
 
         {/* Crear evento */}

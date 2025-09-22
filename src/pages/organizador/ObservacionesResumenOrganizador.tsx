@@ -88,23 +88,22 @@ export default function ObservacionesResumenOrganizador() {
       ["Categoría", "Observación"],
     ];
 
-    observations.forEach((obs, index) => {
-      data.push(
-        [`Catering ${index + 1}`, obs.catering_observations || "Sin observaciones."],
-        [`Mesas ${index + 1}`, obs.tables_observations || "Sin observaciones."],
-        [`Horarios ${index + 1}`, obs.schedule_observations || "Sin observaciones."],
-        [`Cena ${index + 1}`, obs.dinner_observations || "Sin observaciones."],
-        [`Baile ${index + 1}`, obs.dance_observations || "Sin observaciones."],
-        [`Otras observaciones ${index + 1}`, obs.general_observations || "Sin observaciones."]
-      );
-    });
+    const appendObservations = (label: string, values: (string | null)[]) => {
+      const text = values.filter(Boolean).join("; ") || "Sin observaciones.";
+      data.push([label, text]);
+    };
+
+    appendObservations("🍽️ Catering", observations.map(o => o.catering_observations));
+    appendObservations("🪑 Mesas", observations.map(o => o.tables_observations));
+    appendObservations("⏰ Horarios", observations.map(o => o.schedule_observations));
+    appendObservations("🍽️ Cena", observations.map(o => o.dinner_observations));
+    appendObservations("💃 Baile", observations.map(o => o.dance_observations));
+    appendObservations("📝 Otras Observaciones", observations.map(o => o.general_observations));
 
     const sheet = XLSX.utils.aoa_to_sheet(data);
 
-    // Ajustar anchos de columna
     sheet["!cols"] = [{ wch: 25 }, { wch: 60 }];
 
-    // Aplicar estilos
     const range = XLSX.utils.decode_range(sheet["!ref"]!);
     for (let R = range.s.r; R <= range.e.r; ++R) {
       for (let C = range.s.c; C <= range.e.c; ++C) {
@@ -181,51 +180,43 @@ export default function ObservacionesResumenOrganizador() {
           </div>
         )}
 
-        <h1 className="text-3xl font-extrabold text-gray-900 mb-8 flex items-center bg-orange-50 rounded-lg p-4 shadow-md">
-          📝 Observaciones Generales
+        <h1 className="text-4xl font-extrabold text-gray-900 mb-8 flex items-center bg-orange-100 rounded-lg p-4 shadow-md">
+           Observaciones Generales
         </h1>
 
-        {observations.length > 0 ? (
-          <>
-            <div className="grid gap-6 mb-8">
-              {observations.map((obs, index) => (
-                <div key={obs.id} className="bg-white rounded-2xl shadow-xl p-6">
-                  <h2 className="text-xl font-semibold text-gray-800 mb-4">Observaciones {index + 1}</h2>
-                  <div className="space-y-4">
-                    <div>
-                      <h3 className="text-lg font-medium text-gray-700">🍽️ Catering</h3>
-                      <p className="text-gray-600">{obs.catering_observations || "Sin observaciones."}</p>
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-medium text-gray-700">🪑 Mesas</h3>
-                      <p className="text-gray-600">{obs.tables_observations || "Sin observaciones."}</p>
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-medium text-gray-700">⏰ Horarios</h3>
-                      <p className="text-gray-600">{obs.schedule_observations || "Sin observaciones."}</p>
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-medium text-gray-700">🍽️ Cena</h3>
-                      <p className="text-gray-600">{obs.dinner_observations || "Sin observaciones."}</p>
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-medium text-gray-700">💃 Baile</h3>
-                      <p className="text-gray-600">{obs.dance_observations || "Sin observaciones."}</p>
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-medium text-gray-700">📝 Otras Observaciones</h3>
-                      <p className="text-gray-600">{obs.general_observations || "Sin observaciones."}</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
+        <div className="bg-white rounded-2xl shadow-xl p-6 space-y-6">
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-700 flex items-center gap-2">🍽️ Catering</h3>
+              <p className="text-gray-600">{observations.map(o => o.catering_observations).filter(Boolean).join('; ') || "Sin observaciones."}</p>
             </div>
-          </>
-        ) : (
-          <div className="bg-white rounded-2xl shadow-xl p-6 text-center">
-            <p className="text-gray-500">No hay observaciones registradas para este evento.</p>
+
+            <div>
+              <h3 className="text-lg font-semibold text-gray-700 flex items-center gap-2">🪑 Mesas</h3>
+              <p className="text-gray-600">{observations.map(o => o.tables_observations).filter(Boolean).join('; ') || "Sin observaciones."}</p>
+            </div>
+
+            <div>
+              <h3 className="text-lg font-semibold text-gray-700 flex items-center gap-2">⏰ Horarios</h3>
+              <p className="text-gray-600">{observations.map(o => o.schedule_observations).filter(Boolean).join('; ') || "Sin observaciones."}</p>
+            </div>
+
+            <div>
+              <h3 className="text-lg font-semibold text-gray-700 flex items-center gap-2">🍽️ Cena</h3>
+              <p className="text-gray-600">{observations.map(o => o.dinner_observations).filter(Boolean).join('; ') || "Sin observaciones."}</p>
+            </div>
+
+            <div>
+              <h3 className="text-lg font-semibold text-gray-700 flex items-center gap-2">💃 Baile</h3>
+              <p className="text-gray-600">{observations.map(o => o.dance_observations).filter(Boolean).join('; ') || "Sin observaciones."}</p>
+            </div>
+
+            <div>
+              <h3 className="text-lg font-semibold text-gray-700 flex items-center gap-2">📝 Otras Observaciones</h3>
+              <p className="text-gray-600">{observations.map(o => o.general_observations).filter(Boolean).join('; ') || "Sin observaciones."}</p>
+            </div>
           </div>
-        )}
+        </div>
 
         <div className="flex flex-col sm:flex-row justify-between gap-4 mt-8">
           <button

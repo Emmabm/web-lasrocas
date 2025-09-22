@@ -195,7 +195,7 @@ export default function CateringResumenOrganizador() {
     <div className="min-h-screen bg-gradient-to-b from-orange-50 to-gray-100 p-6 sm:p-8">
       <div className="max-w-7xl mx-auto">
         <h1 className="text-4xl font-extrabold text-gray-900 mb-8 flex items-center bg-orange-100 rounded-lg p-4 shadow-md">
-          <span className="mr-3 text-3xl">🍽️</span> Resumen de Catering
+          <span className="mr-3 text-3xl"></span> Resumen de Catering
         </h1>
         <div className="bg-white rounded-2xl shadow-xl p-6 mb-8 transition-all duration-300 hover:shadow-2xl">
           <div className="overflow-x-auto">

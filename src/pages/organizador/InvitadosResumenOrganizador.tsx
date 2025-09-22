@@ -174,8 +174,8 @@ export default function InvitadosResumenOrganizador() {
         )}
 
         <div className="bg-white rounded-xl shadow-lg p-6">
-          <h1 className="text-3xl font-bold text-gray-800 mb-6 flex items-center">
-            <span className="mr-2">🧑‍🤝‍🧑</span> Resumen de Invitados
+          <h1 className="text-4xl font-extrabold text-gray-900 mb-8 flex items-center bg-orange-100 rounded-lg p-4 shadow-md">
+            <span className="mr-2"></span> Resumen de Invitados
           </h1>
 
           <div className="flex gap-4 mb-6">

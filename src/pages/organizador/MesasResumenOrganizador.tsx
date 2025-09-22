@@ -335,13 +335,13 @@ const exportToExcel = () => {
           </div>
         )}
 
-        <h1 className="text-3xl font-extrabold text-gray-900 mb-8 flex items-center bg-orange-50 rounded-lg p-4 shadow-md">
-          🪑 Resumen de Mesas y Decoración
+        <h1 className="text-4xl font-extrabold text-gray-900 mb-8 flex items-center bg-orange-100 rounded-lg p-4 shadow-md">
+           Resumen de Mesas y Decoración
         </h1>
 
         <div className="bg-white rounded-2xl shadow-xl p-6 mb-8">
           <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
-            📋 Distribución de Grupos
+             Distribución de Grupos
           </h2>
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm sm:text-base">
@@ -426,7 +426,7 @@ const exportToExcel = () => {
 
         <div className="bg-white rounded-2xl shadow-xl p-6 mb-8">
           <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
-            🎀 Detalles de Decoración
+             Detalles de Decoración
           </h2>
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm sm:text-base">
