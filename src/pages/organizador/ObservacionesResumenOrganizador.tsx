@@ -6,11 +6,6 @@ import * as XLSX from "xlsx-js-style";
 interface GeneralObservation {
   id: string;
   evento_id: string;
-  catering_observations: string | null;
-  tables_observations: string | null;
-  schedule_observations: string | null;
-  dinner_observations: string | null;
-  dance_observations: string | null;
   general_observations: string | null;
 }
 
@@ -82,61 +77,13 @@ export default function ObservacionesResumenOrganizador() {
     }
 
     const workbook = XLSX.utils.book_new();
-    const data = [
-      ["Observaciones Generales del Evento"],
-      [],
-      ["Categoría", "Observación"],
-    ];
+    const data = [["Observaciones Generales del Evento"], []];
 
-    const appendObservations = (label: string, values: (string | null)[]) => {
-      const text = values.filter(Boolean).join("; ") || "Sin observaciones.";
-      data.push([label, text]);
-    };
-
-    appendObservations("🍽️ Catering", observations.map(o => o.catering_observations));
-    appendObservations("🪑 Mesas", observations.map(o => o.tables_observations));
-    appendObservations("⏰ Horarios", observations.map(o => o.schedule_observations));
-    appendObservations("🍽️ Cena", observations.map(o => o.dinner_observations));
-    appendObservations("💃 Baile", observations.map(o => o.dance_observations));
-    appendObservations("📝 Otras Observaciones", observations.map(o => o.general_observations));
+    const text = observations.map(o => o.general_observations).filter(Boolean).join("\n") || "Sin observaciones.";
+    data.push([text]);
 
     const sheet = XLSX.utils.aoa_to_sheet(data);
-
-    sheet["!cols"] = [{ wch: 25 }, { wch: 60 }];
-
-    const range = XLSX.utils.decode_range(sheet["!ref"]!);
-    for (let R = range.s.r; R <= range.e.r; ++R) {
-      for (let C = range.s.c; C <= range.e.c; ++C) {
-        const cellRef = XLSX.utils.encode_cell({ r: R, c: C });
-        if (!sheet[cellRef]) continue;
-
-        const isTitle = R === 0;
-        const isHeader = R === 2;
-
-        sheet[cellRef].s = {
-          border: {
-            top: { style: "thin" },
-            bottom: { style: "thin" },
-            left: { style: "thin" },
-            right: { style: "thin" },
-          },
-          alignment: {
-            vertical: "center",
-            horizontal: isTitle || isHeader ? "center" : "left",
-            wrapText: true,
-          },
-          font: {
-            bold: isTitle || isHeader,
-            sz: isTitle ? 14 : isHeader ? 12 : 11,
-          },
-          fill: isTitle
-            ? { fgColor: { rgb: "FFF9C4" } }
-            : isHeader
-            ? { fgColor: { rgb: "FFD700" } }
-            : { fgColor: { rgb: R % 2 === 0 ? "F5F5F5" : "FFFFFF" } },
-        };
-      }
-    }
+    sheet["!cols"] = [{ wch: 80 }];
 
     XLSX.utils.book_append_sheet(workbook, sheet, "Observaciones");
     const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
@@ -161,7 +108,7 @@ export default function ObservacionesResumenOrganizador() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 p-6 sm:p-8">
-      <div className="max-w-5xl mx-auto">
+      <div className="max-w-3xl mx-auto">
         {modalMessage && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full">
@@ -180,42 +127,14 @@ export default function ObservacionesResumenOrganizador() {
           </div>
         )}
 
-        <h1 className="text-4xl font-extrabold text-gray-900 mb-8 flex items-center bg-orange-100 rounded-lg p-4 shadow-md">
-           Observaciones Generales
+        <h1 className="text-4xl font-extrabold text-gray-900 mb-8 bg-orange-100 rounded-lg p-4 shadow-md">
+          Observaciones Generales
         </h1>
 
-        <div className="bg-white rounded-2xl shadow-xl p-6 space-y-6">
-          <div className="space-y-4">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-700 flex items-center gap-2">🍽️ Catering</h3>
-              <p className="text-gray-600">{observations.map(o => o.catering_observations).filter(Boolean).join('; ') || "Sin observaciones."}</p>
-            </div>
-
-            <div>
-              <h3 className="text-lg font-semibold text-gray-700 flex items-center gap-2">🪑 Mesas</h3>
-              <p className="text-gray-600">{observations.map(o => o.tables_observations).filter(Boolean).join('; ') || "Sin observaciones."}</p>
-            </div>
-
-            <div>
-              <h3 className="text-lg font-semibold text-gray-700 flex items-center gap-2">⏰ Horarios</h3>
-              <p className="text-gray-600">{observations.map(o => o.schedule_observations).filter(Boolean).join('; ') || "Sin observaciones."}</p>
-            </div>
-
-            <div>
-              <h3 className="text-lg font-semibold text-gray-700 flex items-center gap-2">🍽️ Cena</h3>
-              <p className="text-gray-600">{observations.map(o => o.dinner_observations).filter(Boolean).join('; ') || "Sin observaciones."}</p>
-            </div>
-
-            <div>
-              <h3 className="text-lg font-semibold text-gray-700 flex items-center gap-2">💃 Baile</h3>
-              <p className="text-gray-600">{observations.map(o => o.dance_observations).filter(Boolean).join('; ') || "Sin observaciones."}</p>
-            </div>
-
-            <div>
-              <h3 className="text-lg font-semibold text-gray-700 flex items-center gap-2">📝 Otras Observaciones</h3>
-              <p className="text-gray-600">{observations.map(o => o.general_observations).filter(Boolean).join('; ') || "Sin observaciones."}</p>
-            </div>
-          </div>
+        <div className="bg-white rounded-2xl shadow-xl p-6">
+          <p className="text-gray-700 whitespace-pre-line">
+            {observations.map(o => o.general_observations).filter(Boolean).join("\n") || "Sin observaciones."}
+          </p>
         </div>
 
         <div className="flex flex-col sm:flex-row justify-between gap-4 mt-8">

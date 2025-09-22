@@ -39,23 +39,23 @@ export default function HorariosResumenOrganizador() {
 
       setEvento(eventoData);
 
+      // --- CORRECCIÓN: Usar evento_id en lugar de user_id ---
       const { data: scheduleData, error: scheduleError } = await supabase
         .from('schedule_blocks')
-        .select('id, title, time, user_id')
-        .eq('user_id', id)
+        .select('id, title, time')
+        .eq('evento_id', id)
         .order('time', { ascending: true });
 
-      if (scheduleError) setScheduleBlocks([]);
-      else setScheduleBlocks(scheduleData || []);
+      setScheduleBlocks(scheduleError ? [] : scheduleData || []);
 
       const { data: staffData, error: staffError } = await supabase
         .from('external_staff')
-        .select('id, name, role, contact, user_id')
-        .eq('user_id', id)
+        .select('id, name, role, contact')
+        .eq('evento_id', id)
         .order('role', { ascending: true });
 
-      if (staffError) setExternalStaff([]);
-      else setExternalStaff(staffData || []);
+      setExternalStaff(staffError ? [] : staffData || []);
+
     } catch (error) {
       console.error('Error inesperado:', error);
       setScheduleBlocks([]);
@@ -74,28 +74,22 @@ export default function HorariosResumenOrganizador() {
   const exportToExcel = () => {
     const workbook = XLSX.utils.book_new();
 
-    // Preparar datos para una sola hoja
     const sheetData = [];
 
-    // Título para la tabla de horarios
+    // Horarios
     sheetData.push(["Horarios"]);
     sheetData.push(["Hora", "Descripción"]);
-
-    // Datos de horarios
     const horariosData = scheduleBlocks.map(block => [
       block.time || 'No especificada',
       block.title || 'Sin actividad'
     ]);
     sheetData.push(...horariosData);
 
-    // Fila vacía para separar tablas
     sheetData.push([]);
 
-    // Título para la tabla de personal externo
+    // Personal Externo
     sheetData.push(["Personal Externo"]);
     sheetData.push(["Nombre", "Rol", "Teléfono"]);
-
-    // Datos de personal externo
     const staffData = externalStaff.map(staff => [
       staff.name || 'Sin nombre',
       staff.role || 'Sin rol',
@@ -103,25 +97,22 @@ export default function HorariosResumenOrganizador() {
     ]);
     sheetData.push(...staffData);
 
-    // Crear hoja
     const sheet = XLSX.utils.aoa_to_sheet(sheetData);
 
-    // Ajustar anchos de columna
     sheet['!cols'] = [
-      { wch: 20 }, // Hora / Nombre
-      { wch: 50 }, // Descripción / Rol
-      { wch: 20 }  // Teléfono
+      { wch: 20 },
+      { wch: 50 },
+      { wch: 20 }
     ];
 
-    // Aplicar estilos a las celdas
     const range = XLSX.utils.decode_range(sheet['!ref']!);
     for (let R = range.s.r; R <= range.e.r; ++R) {
       for (let C = range.s.c; C <= range.e.c; ++C) {
         const cellRef = XLSX.utils.encode_cell({ r: R, c: C });
         if (!sheet[cellRef]) continue;
 
-        const isHeader = R === 1 || R === horariosData.length + 3; // Encabezados de horarios y personal externo
-        const isTitle = R === 0 || R === horariosData.length + 2; // Títulos de secciones
+        const isHeader = R === 1 || R === horariosData.length + 3;
+        const isTitle = R === 0 || R === horariosData.length + 2;
 
         sheet[cellRef].s = {
           border: {
@@ -145,7 +136,6 @@ export default function HorariosResumenOrganizador() {
       }
     }
 
-    // Generar y descargar archivo
     XLSX.utils.book_append_sheet(workbook, sheet, "Resumen");
     const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
     const data = new Blob([excelBuffer], { type: "application/octet-stream" });
@@ -163,10 +153,10 @@ export default function HorariosResumenOrganizador() {
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 p-6 sm:p-8">
       <div className="max-w-7xl mx-auto">
         <h1 className="text-4xl font-extrabold text-gray-900 mb-8 flex items-center bg-orange-100 rounded-lg p-4 shadow-md">
-          <span className="mr-3 text-3xl"></span> Resumen de Evento y Horarios
+          Resumen de Evento y Horarios
         </h1>
 
-        <div className="bg-white rounded-2xl shadow-xl p-6 mb-8 transition-all duration-300 hover:shadow-2xl">
+        <div className="bg-white rounded-2xl shadow-xl p-6 mb-8">
           <h2 className="text-2xl font-semibold text-gray-800 mb-4">Detalles del Evento</h2>
           {evento.id ? (
             <div className="text-gray-600 text-sm sm:text-base space-y-2">
@@ -177,7 +167,7 @@ export default function HorariosResumenOrganizador() {
           )}
         </div>
 
-        <div className="bg-white rounded-2xl shadow-xl p-6 mb-8 transition-all duration-300 hover:shadow-2xl">
+        <div className="bg-white rounded-2xl shadow-xl p-6 mb-8">
           <h2 className="text-2xl font-semibold text-gray-800 mb-4">Horarios</h2>
           {scheduleBlocks.length > 0 ? (
             <ul className="list-disc list-inside space-y-2 text-gray-600">
@@ -190,7 +180,7 @@ export default function HorariosResumenOrganizador() {
           )}
         </div>
 
-        <div className="bg-white rounded-2xl shadow-xl p-6 mb-8 transition-all duration-300 hover:shadow-2xl">
+        <div className="bg-white rounded-2xl shadow-xl p-6 mb-8">
           <h2 className="text-2xl font-semibold text-gray-800 mb-4">Personal Externo</h2>
           {externalStaff.length > 0 ? (
             <ul className="list-disc list-inside space-y-2 text-gray-600">
@@ -206,7 +196,7 @@ export default function HorariosResumenOrganizador() {
         <div className="flex flex-col sm:flex-row justify-between gap-4">
           <button
             onClick={() => navigate("/organizador/panel")}
-            className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-6 rounded-lg shadow-md transition-all duration-300 transform hover:scale-105"
+            className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-6 rounded-lg"
           >
             ← Volver al panel
           </button>
@@ -214,14 +204,14 @@ export default function HorariosResumenOrganizador() {
           <div className="flex flex-col sm:flex-row gap-4">
             <button
               onClick={exportToExcel}
-              className="bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-lg shadow-md transition-all duration-300 transform hover:scale-105"
+              className="bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-lg"
             >
               Exportar a Excel 
             </button>
 
             <button
               onClick={() => navigate(`/organizador/evento/${id}/invitados`)}
-              className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold py-3 px-6 rounded-lg shadow-md transition-all duration-300 transform hover:scale-105"
+              className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold py-3 px-6 rounded-lg"
             >
               Ver resumen de invitados
             </button>
