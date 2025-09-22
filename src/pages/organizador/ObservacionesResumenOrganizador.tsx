@@ -140,7 +140,7 @@ export default function ObservacionesResumenOrganizador() {
           fill: isTitle
             ? { fgColor: { rgb: "FFF59D" } } // amarillo suave
             : isHeader
-            ? { fgColor: { rgb: "FF6B35" } } // naranja
+            ? { fgColor: { rgb: "FFFF00" } } // naranja
             : undefined,
         };
       }
