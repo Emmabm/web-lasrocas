@@ -73,67 +73,91 @@ export default function ObservacionesResumenOrganizador() {
   };
 
   const exportToExcel = () => {
-  if (observations.length === 0) {
-    setModalMessage("No hay datos para exportar.");
-    return;
-  }
+    if (observations.length === 0) {
+      setModalMessage("No hay datos para exportar.");
+      return;
+    }
 
-  const workbook = XLSX.utils.book_new();
+    const workbook = XLSX.utils.book_new();
+    const data: any[][] = [];
 
+    // Título
+    data.push(["Observaciones Generales del Evento"]);
+    data.push([]); // fila vacía
 
-  const data: any[][] = [];
+    // Encabezado
+    data.push(["Fecha", "Observación"]);
 
-  
-  data.push(["Observaciones Generales del Evento"]);
+    // Datos
+    observations.forEach(obs => {
+      const fecha = obs.created_at
+        ? new Date(obs.created_at).toLocaleString("es-AR", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          })
+        : "";
+      data.push([fecha, obs.contenido || "Sin observaciones"]);
+    });
 
-  
-  data.push([]);
+    const sheet = XLSX.utils.aoa_to_sheet(data);
 
- 
-  observations.forEach(obs => {
-    const fecha = obs.created_at
-      ? new Date(obs.created_at).toLocaleString("es-AR", {
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-        })
-      : "";
-    data.push([fecha, obs.contenido || "Sin observaciones"]);
-  });
+    // Fusionar título
+    const lastCol = 2;
+    sheet["!merges"] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: lastCol - 1 } }];
 
-  const sheet = XLSX.utils.aoa_to_sheet(data);
+    // Ancho columnas
+    sheet["!cols"] = [{ wch: 25 }, { wch: 80 }];
 
-  sheet["A1"].s = {
-    fill: { fgColor: { rgb: "FFFF00" } }, 
-    font: { bold: true },
-    alignment: { horizontal: "center" },
+    const range = XLSX.utils.decode_range(sheet["!ref"]!);
+    for (let R = range.s.r; R <= range.e.r; ++R) {
+      for (let C = range.s.c; C <= range.e.c; ++C) {
+        const cellRef = XLSX.utils.encode_cell({ r: R, c: C });
+        if (!sheet[cellRef]) continue;
+
+        const isTitle = R === 0;
+        const isHeader = R === 2;
+
+        sheet[cellRef].s = {
+          border: {
+            top: { style: "thin" },
+            bottom: { style: "thin" },
+            left: { style: "thin" },
+            right: { style: "thin" },
+          },
+          alignment: {
+            vertical: "center",
+            horizontal: isTitle || isHeader ? "center" : "left",
+            wrapText: true,
+          },
+          font: {
+            bold: isTitle || isHeader,
+            color: isHeader ? { rgb: "FFFFFF" } : undefined,
+            sz: isTitle ? 14 : isHeader ? 12 : 11,
+          },
+          fill: isTitle
+            ? { fgColor: { rgb: "FFF59D" } } // amarillo suave
+            : isHeader
+            ? { fgColor: { rgb: "FF6B35" } } // naranja
+            : undefined,
+        };
+      }
+    }
+
+    XLSX.utils.book_append_sheet(workbook, sheet, "Observaciones");
+    const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+    const blob = new Blob([excelBuffer], { type: "application/octet-stream" });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `Observaciones_Evento_${id}.xlsx`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
   };
-
-  
-  const lastCol = 2; 
-  sheet["!merges"] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: lastCol - 1 } }];
-
-  
-  sheet["!cols"] = [
-    { wch: 25 }, 
-    { wch: 80 }, 
-  ];
-
-  XLSX.utils.book_append_sheet(workbook, sheet, "Observaciones");
-
-  const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
-  const blob = new Blob([excelBuffer], { type: "application/octet-stream" });
-  const url = window.URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `Observaciones_Evento_${id}.xlsx`;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  window.URL.revokeObjectURL(url);
-};
 
   useEffect(() => {
     if (id) fetchObservations();
@@ -144,7 +168,7 @@ export default function ObservacionesResumenOrganizador() {
   }
 
   return (
-    <div className="min-h-screen p-6 sm:p-8">
+    <div className="min-h-screen p-6 sm:p-8 bg-white">
       <div className="max-w-4xl mx-auto">
         {modalMessage && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
