@@ -134,7 +134,7 @@ export default function ObservacionesResumenOrganizador() {
           },
           font: {
             bold: isTitle || isHeader,
-            color: isHeader ? { rgb: "FFFFFF" } : undefined,
+            color: isHeader ? { rgb: "000000" } : undefined,
             sz: isTitle ? 14 : isHeader ? 12 : 11,
           },
           fill: isTitle
