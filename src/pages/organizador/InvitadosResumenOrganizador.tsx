@@ -54,12 +54,6 @@ export default function InvitadosResumenOrganizador() {
         return;
       }
 
-      if (evento.tipo.toLowerCase() !== 'fiesta15') {
-        setModalMessage('Lista de invitados solo disponible para eventos tipo fiesta15.');
-        navigate('/organizador/panel');
-        return;
-      }
-
       const { data, error } = await supabase
         .from('invitados')
         .select('*')

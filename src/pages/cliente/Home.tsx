@@ -84,65 +84,61 @@ const Home: React.FC = () => {
         </p>
       </section>
 
-      <section className="bg-gray-100 rounded-lg p-8 max-w-6xl mx-auto mt-20">
+      {/* Pasos mejorados */}
+      <section className="bg-gray-50 rounded-2xl p-10 max-w-6xl mx-auto mt-20 shadow-md">
         <div className="flex flex-col items-center mb-10">
-          <h2 className="text-2xl font-bold text-center">¿Cómo funciona?</h2>
+          <h2 className="text-3xl font-bold text-center text-gray-800">¿Cómo funciona?</h2>
+          <p className="text-gray-600 mt-2 text-center max-w-2xl">
+            Sigue estos sencillos pasos para organizar tu evento de forma rápida y personalizada.
+          </p>
         </div>
-        <div className="flex flex-col sm:flex-row justify-center flex-wrap gap-6">
-          <div className="flex flex-col items-center">
-            <div className="w-10 h-10 bg-[#FF6B35] text-white rounded-full flex items-center justify-center mb-4">
-              1
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+          {[
+            {
+              step: 1,
+              title: 'Elige tu Menú',
+              desc: 'Selecciona las opciones de catering que mejor se adapten a tu evento.',
+            },
+            {
+              step: 2,
+              title: 'Diseña tu Salón',
+              desc: 'Completa la distribución y decoración de las mesas.',
+            },
+            {
+              step: 3,
+              title: 'Organiza la Cena',
+              desc: 'Si elegiste el menú 4, asigná los invitados a la cena.',
+            },
+            {
+              step: 4,
+              title: 'Organiza los Horarios',
+              desc: 'Programa las actividades y tiempos clave de tu evento.',
+            },
+            {
+              step: 5,
+              title: 'Gestiona el Baile (Invitados)',
+              desc: 'Administra la lista de invitados para el baile de tu evento.',
+            },
+            {
+              step: 6,
+              title: 'Añade Observaciones',
+              desc: 'Ingresa notas o detalles especiales para tu evento.',
+            },
+          ].map(({ step, title, desc }) => (
+            <div
+              key={step}
+              className="flex flex-col items-center bg-white rounded-2xl shadow-md p-6 transition transform hover:-translate-y-1 hover:shadow-lg"
+            >
+              <div className="w-12 h-12 bg-[#FF6B35] text-white rounded-full flex items-center justify-center text-lg font-bold mb-4 shadow">
+                {step}
+              </div>
+              <h3 className="text-xl font-semibold text-gray-800 mb-2 text-center">
+                {title}
+              </h3>
+              <p className="text-gray-600 text-center text-sm">{desc}</p>
             </div>
-            <h3 className="text-lg font-medium mb-2">Elige tu Menú</h3>
-            <p className="text-center text-gray-600">
-              Selecciona las opciones de catering que mejor se adapten a tu evento.
-            </p>
-          </div>
-          <div className="flex flex-col items-center">
-            <div className="w-10 h-10 bg-[#FF6B35] text-white rounded-full flex items-center justify-center mb-4">
-              2
-            </div>
-            <h3 className="text-lg font-medium mb-2">Diseña tu Salón</h3>
-            <p className="text-center text-gray-600">
-              Completa la distribución y decoración de las mesas.
-            </p>
-          </div>
-          <div className="flex flex-col items-center">
-            <div className="w-10 h-10 bg-[#FF6B35] text-white rounded-full flex items-center justify-center mb-4">
-              3
-            </div>
-            <h3 className="text-lg font-medium mb-2">Organiza la Cena</h3>
-            <p className="text-center text-gray-600">
-              Si elegiste el menú 4, asigná los invitados a la cena.
-            </p>
-          </div>
-          <div className="flex flex-col items-center">
-            <div className="w-10 h-10 bg-[#FF6B35] text-white rounded-full flex items-center justify-center mb-4">
-              4
-            </div>
-            <h3 className="text-lg font-medium mb-2">Organiza los Horarios</h3>
-            <p className="text-center text-gray-600">
-              Programa las actividades y tiempos clave de tu evento.
-            </p>
-          </div>
-          <div className="flex flex-col items-center">
-            <div className="w-10 h-10 bg-[#FF6B35] text-white rounded-full flex items-center justify-center mb-4">
-              5
-            </div>
-            <h3 className="text-lg font-medium mb-2">Gestiona el Baile (Invitados)</h3>
-            <p className="text-center text-gray-600">
-              Administra la lista de invitados para el baile de tu evento.
-            </p>
-          </div>
-          <div className="flex flex-col items-center">
-            <div className="w-10 h-10 bg-[#FF6B35] text-white rounded-full flex items-center justify-center mb-4">
-              6
-            </div>
-            <h3 className="text-lg font-medium mb-2">Añade Observaciones</h3>
-            <p className="text-center text-gray-600">
-              Ingresa notas o detalles especiales para tu evento.
-            </p>
-          </div>
+          ))}
         </div>
       </section>
     </div>
