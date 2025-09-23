@@ -7,6 +7,7 @@ import { useUserContext } from "../../../hooks/useUserContext";
 const GuestsWrapper = () => {
   const [loading, setLoading] = useState(true);
   const [modalMessage, setModalMessage] = useState<string | null>(null);
+  const [eventType, setEventType] = useState<string | null>(null);
   const { token, setToken } = useUserContext();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -52,6 +53,7 @@ const GuestsWrapper = () => {
         return;
       }
 
+      setEventType(data.tipo);
       setLoading(false);
     };
 
@@ -91,7 +93,7 @@ const GuestsWrapper = () => {
           </div>
         </div>
       )}
-      <Guests />
+      <Guests eventType={eventType} />
     </div>
   );
 };
