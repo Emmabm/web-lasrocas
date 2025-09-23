@@ -12,11 +12,7 @@ interface Guest {
   evento_id: string;
 }
 
-interface GuestsProps {
-  eventType: string | null;
-}
-
-const Guests = ({ eventType }: GuestsProps) => {
+const Guests = () => {
   const navigate = useNavigate();
   const { token } = useUserContext();
   const [guests, setGuests] = useState<Guest[]>([]);
@@ -99,17 +95,12 @@ const Guests = ({ eventType }: GuestsProps) => {
       return;
     }
 
-    if (!firstName.trim() || !lastName.trim()) {
-      setModalMessage("Por favor, completa los campos de nombre y apellido");
+    if (!firstName.trim() || !lastName.trim() || !dni.trim()) {
+      setModalMessage("Por favor, completa todos los campos");
       return;
     }
 
-    if (eventType === 'fiesta15' && !dni.trim()) {
-      setModalMessage("Por favor, completa el campo DNI para eventos de tipo Fiesta de 15");
-      return;
-    }
-
-    if (eventType === 'fiesta15' && guests.some((g) => g.dni === dni && g.id !== editId)) {
+    if (guests.some((g) => g.dni === dni && g.id !== editId)) {
       setModalMessage("El DNI ya está registrado para este evento");
       return;
     }
@@ -120,7 +111,7 @@ const Guests = ({ eventType }: GuestsProps) => {
       id: editId || crypto.randomUUID(),
       first_name: firstName,
       last_name: lastName,
-      dni: eventType === 'fiesta15' ? dni : "",
+      dni,
       gender: newGender,
       evento_id: eventId!, // Usamos ! para asegurar que eventId no es null
     };
@@ -249,15 +240,13 @@ const Guests = ({ eventType }: GuestsProps) => {
                   placeholder="Nombre"
                   disabled={isBlocked}
                 />
-                {eventType === 'fiesta15' && (
-                  <input
-                    className="border border-gray-300 px-2 py-1 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF6B35] text-base min-w-[120px]"
-                    value={dni}
-                    onChange={(e) => setDni(e.target.value)}
-                    placeholder="DNI"
-                    disabled={isBlocked}
-                  />
-                )}
+                <input
+                  className="border border-gray-300 px-2 py-1 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF6B35] text-base min-w-[120px]"
+                  value={dni}
+                  onChange={(e) => setDni(e.target.value)}
+                  placeholder="DNI"
+                  disabled={isBlocked}
+                />
                 {activeTab === "all" && (
                   <select
                     className="border border-gray-300 px-2 py-1 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF6B35] text-base min-w-[120px]"
@@ -288,7 +277,7 @@ const Guests = ({ eventType }: GuestsProps) => {
             ) : (
               <div className="flex justify-between w-full items-center">
                 <span className="text-gray-800">
-                  {guest.last_name} {guest.first_name}{eventType === 'fiesta15' ? ` DNI: ${guest.dni}` : ''}
+                  {guest.last_name} {guest.first_name} DNI: {guest.dni}
                 </span>
                 <div className="relative">
                   <button
@@ -372,7 +361,7 @@ const Guests = ({ eventType }: GuestsProps) => {
           ))}
         </div>
 
-        <div className={`grid grid-cols-1 ${eventType === 'fiesta15' ? 'sm:grid-cols-5' : 'sm:grid-cols-4'} gap-4 mb-8`}>
+        <div className="grid grid-cols-1 sm:grid-cols-5 gap-4 mb-8">
           <input
             type="text"
             className="border border-gray-300 px-4 py-3 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF6B35] transition-all text-base"
@@ -389,16 +378,14 @@ const Guests = ({ eventType }: GuestsProps) => {
             onChange={(e) => setFirstName(e.target.value)}
             disabled={isBlocked}
           />
-          {eventType === 'fiesta15' && (
-            <input
-              type="text"
-              className="border border-gray-300 px-4 py-3 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF6B35] transition-all text-base"
-              placeholder="DNI"
-              value={dni}
-              onChange={(e) => setDni(e.target.value)}
-              disabled={isBlocked}
-            />
-          )}
+          <input
+            type="text"
+            className="border border-gray-300 px-4 py-3 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF6B35] transition-all text-base"
+            placeholder="DNI"
+            value={dni}
+            onChange={(e) => setDni(e.target.value)}
+            disabled={isBlocked}
+          />
           {activeTab === "all" && (
             <select
               className="border border-gray-300 px-4 py-3 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF6B35] transition-all text-base"
