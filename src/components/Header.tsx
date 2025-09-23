@@ -53,12 +53,6 @@ const Header: React.FC = () => {
     navigate('/auth');
   };
 
-  const handleMesasClick = (e: React.MouseEvent) => {
-    if (!menuSeleccionado || menuSeleccionado === 'menu4') {
-      e.preventDefault();
-      alert('Primero debes elegir un menú de cena para organizar las mesas.');
-    }
-  };
 
   if (location.pathname.includes('/organizador/panel') || location.pathname.startsWith('/auth')) return null;
 
@@ -118,7 +112,6 @@ const Header: React.FC = () => {
                     className={({ isActive }) =>
                       `flex flex-col items-center transition-colors ${isActive ? 'text-white font-medium' : 'text-white/90 hover:text-white'}`
                     }
-                    onClick={handleMesasClick}
                   >
                     <LayoutGrid className="h-5 w-5" />
                     <span className="text-xs mt-1">Mesas</span>
