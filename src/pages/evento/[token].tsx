@@ -1,24 +1,35 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '../../supabaseClient';
-import Guests from '../cliente/invitados/Guests'; // esta es la que da error
- 
+import Guests from '../cliente/invitados/Guests';
 
+interface Evento {
+  id: string;
+  nombre: string;
+  tipo: string;
+  fecha: string;
+  menu: number; // ahora usamos "menu" según tu tabla
+  token_acceso: string;
+  estado?: string;
+  catering_confirmado?: boolean;
+}
 
 export default function EventoPage() {
-  const { token } = useParams();
-  const [evento, setEvento] = useState<any>(null);
+  const { token } = useParams<{ token: string }>();
+  const [evento, setEvento] = useState<Evento | null>(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [menu, setMenu] = useState<number | null>(null);
 
+  // 1️⃣ Cargar evento al entrar por el link
   useEffect(() => {
-    const cargarEvento = async () => {
-      if (!token || token.length < 5) {
-        setError('Link inválido o incompleto.');
-        setCargando(false);
-        return;
-      }
+    if (!token || token.length < 5) {
+      setError('Link inválido o incompleto.');
+      setCargando(false);
+      return;
+    }
 
+    const cargarEvento = async () => {
       const { data, error } = await supabase
         .from('eventos')
         .select('*')
@@ -29,7 +40,9 @@ export default function EventoPage() {
         setError('Evento no encontrado o link inválido.');
         setEvento(null);
       } else {
-        setEvento(data);
+        const eventoData = data as Evento;
+        setEvento(eventoData);
+        setMenu(eventoData.menu); // <-- usamos la columna "menu" de la tabla
       }
 
       setCargando(false);
@@ -37,6 +50,32 @@ export default function EventoPage() {
 
     cargarEvento();
   }, [token]);
+
+  // 2️⃣ Mostrar/ocultar secciones según el menú
+  useEffect(() => {
+    if (menu === null) return;
+
+    const mesas = document.getElementById('seccion-mesas');
+    const cena = document.getElementById('seccion-cena');
+
+    if (menu === 4) {
+      if (mesas) mesas.style.display = 'none';
+      if (cena) cena.style.display = 'block';
+    } else {
+      if (mesas) mesas.style.display = 'block';
+      if (cena) cena.style.display = 'none';
+    }
+  }, [menu]);
+
+  // 3️⃣ Función para cambiar el menú y guardar en DB
+  const cambiarMenu = async (nuevoMenu: number) => {
+    setMenu(nuevoMenu);
+
+    await supabase
+      .from('eventos')
+      .update({ menu: nuevoMenu })
+      .eq('token_acceso', token);
+  };
 
   if (cargando) return <p className="p-6 text-center">⏳ Cargando evento...</p>;
   if (error) return <p className="p-6 text-center text-red-600">{error}</p>;
@@ -52,9 +91,13 @@ export default function EventoPage() {
   const tipo = evento.tipo?.toLowerCase();
   const mensaje = mensajes[tipo] || '🎉 Evento especial';
 
-  const fechaFormateada = new Date(evento.fecha).toLocaleDateString('es-AR', {
-    day: 'numeric', month: 'long', year: 'numeric'
-  });
+  const fechaFormateada = evento.fecha
+    ? new Date(evento.fecha).toLocaleDateString('es-AR', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      })
+    : '';
 
   return (
     <div className="p-6 max-w-3xl mx-auto">
@@ -71,23 +114,44 @@ export default function EventoPage() {
             Usá esta plataforma para organizar cada detalle y compartir el evento con tus invitados.
           </p>
 
-          <div className="grid grid-cols-2 gap-4 text-gray-800">
-            <div className="bg-gray-100 rounded-lg p-4">
-              <p className="text-lg font-semibold">📍 Catering</p>
-              <p>Personalizado y adaptado a tu estilo.</p>
-            </div>
-            <div className="bg-gray-100 rounded-lg p-4">
-              <p className="text-lg font-semibold">🪑 Mesas</p>
-              <p>Organización simple y dinámica.</p>
-            </div>
-            <div className="bg-gray-100 rounded-lg p-4">
-              <p className="text-lg font-semibold">📋 Invitados</p>
+          {/* Selector de menú */}
+          <div className="mb-4">
+            <label className="block mb-1 text-gray-700">Seleccioná tu menú:</label>
+            <select
+              value={menu || ''}
+              onChange={(e) => cambiarMenu(Number(e.target.value))}
+              className="border p-2 rounded w-full"
+            >
+              <option value={1}>Menú 1</option>
+              <option value={2}>Menú 2</option>
+              <option value={3}>Menú 3</option>
+              <option value={4}>Menú 4 (islas, sin mesas)</option>
+            </select>
+          </div>
+
+          {/* Secciones */}
+          <div id="seccion-mesas" className="bg-gray-100 rounded-lg p-4 mb-4">
+            <p className="text-lg font-semibold">🪑 Mesas</p>
+            <p>Organización simple y dinámica.</p>
+          </div>
+
+          <div id="seccion-cena" className="bg-gray-100 rounded-lg p-4 mb-4">
+            <p className="text-lg font-semibold">🍽️ Cena / Islas</p>
+            <p>Sección visible solo si el menú es de tipo islas.</p>
+          </div>
+
+          <div className="bg-gray-100 rounded-lg p-4 mb-4">
+            <p className="text-lg font-semibold">📋 Invitados</p>
+            {tipo === 'fiesta15' ? (
+              <Guests eventoId={evento.id} />
+            ) : (
               <p>Confirmaciones en tiempo real.</p>
-            </div>
-            <div className="bg-gray-100 rounded-lg p-4">
-              <p className="text-lg font-semibold">⏰ Horarios</p>
-              <p>Planificación clara para tu evento.</p>
-            </div>
+            )}
+          </div>
+
+          <div className="bg-gray-100 rounded-lg p-4 mb-4">
+            <p className="text-lg font-semibold">⏰ Horarios</p>
+            <p>Planificación clara para tu evento.</p>
           </div>
 
           {/* Ubicación del salón */}
@@ -106,16 +170,10 @@ export default function EventoPage() {
             ></iframe>
 
             <p className="mt-3 text-sm text-gray-600">
-              El evento se realizará en <strong>Salón Las Rocas</strong>, ubicado en <strong>Chacras de Coria, Mendoza</strong>. Zona tranquila, ideal para celebraciones íntimas.
+              El evento se realizará en <strong>Salón Las Rocas</strong>, ubicado en{' '}
+              <strong>Chacras de Coria, Mendoza</strong>. Zona tranquila, ideal para celebraciones íntimas.
             </p>
           </div>
-
-
-          {tipo === 'fiesta15' && (
-            <div className="mt-6">
-              <Guests eventoId={evento.id} />
-            </div>
-          )}
         </div>
       </div>
     </div>

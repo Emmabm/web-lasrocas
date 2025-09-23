@@ -43,9 +43,9 @@ export default function OrganizadorPanel() {
 
       const { data, error } = await supabase
         .from('eventos')
-        .select('id, tipo, nombre, created_at, token_acceso, estado')
+        .select('id, tipo, nombre, fecha, created_at, token_acceso, estado')
         .eq('organizador_id', user.id)
-        .order('created_at', { ascending: false });
+        .order('fecha', { ascending: true }); // <-- cambio aquí
 
       if (error) {
         setModalMessage(`Error al cargar eventos: ${error.message}`);
@@ -403,13 +403,7 @@ export default function OrganizadorPanel() {
                         <span className="font-medium">{e.nombre || '—'}</span>
                       )}
                     </td>
-                    <td className="p-4">
-                      {new Date(e.created_at).toLocaleDateString('es-AR', {
-                        day: '2-digit',
-                        month: '2-digit',
-                        year: 'numeric',
-                      })}
-                    </td>
+                    <td className="p-4">{e.fecha}</td>
                     <td className="p-4">
                       <span
                         className={`font-medium ${

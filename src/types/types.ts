@@ -3,8 +3,6 @@ export interface Position {
   y: number;
 }
 
-
-
 export interface GuestGroup {
   id?: string; 
   name: string;
