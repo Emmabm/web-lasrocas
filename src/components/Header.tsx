@@ -10,6 +10,7 @@ const Header: React.FC = () => {
   const { menuSeleccionado, token, setToken, setMenuSeleccionado } = useUserContext();
   const [logueado, setLogueado] = useState(false);
   const [mostrarInvitados] = useState(true); // siempre true
+  const [loadingMenu, setLoadingMenu] = useState(true); // Nuevo estado para la carga del menú
 
   const urlToken = new URLSearchParams(location.search).get('token');
 
@@ -18,6 +19,7 @@ const Header: React.FC = () => {
     const activeToken = urlToken || token;
     console.log('Header.tsx - Valores iniciales:', { activeToken, menuSeleccionado, urlToken, token });
     if (!activeToken) {
+      setLoadingMenu(false);
       return;
     }
 
@@ -37,7 +39,8 @@ const Header: React.FC = () => {
           .single();
 
         if (error || !data) {
-          console.error('Error fetching menu:', error);
+          console.error('Header.tsx - Error fetching menu:', error);
+          setLoadingMenu(false);
           return;
         }
 
@@ -48,10 +51,12 @@ const Header: React.FC = () => {
 
         // Si el evento está inactivo, mostrar mensaje
         if (data.estado === 'inactivo') {
-          console.warn('Evento inactivo');
+          console.warn('Header.tsx - Evento inactivo');
         }
+        setLoadingMenu(false);
       } catch (err) {
-        console.error('Error al conectar con Supabase:', err);
+        console.error('Header.tsx - Error al conectar con Supabase:', err);
+        setLoadingMenu(false);
       }
     };
 
@@ -83,6 +88,13 @@ const Header: React.FC = () => {
   const getPathWithToken = (path: string) => {
     return navToken ? `${path}?token=${navToken}` : path;
   };
+
+  // Mostrar un placeholder mientras se carga el menú
+  if (loadingMenu) return (
+    <header className="bg-[#FF6B35] text-white shadow-md">
+      <div className="container mx-auto px-4 py-3 text-center">Cargando navegación...</div>
+    </header>
+  );
 
   return (
     <header className="bg-[#FF6B35] text-white shadow-md">
