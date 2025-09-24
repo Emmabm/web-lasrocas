@@ -46,7 +46,7 @@ interface Decoracion {
 
 const MIN_GUESTS = 8;
 const MAX_GUESTS = 11;
-const MIN_GUESTS_MAIN = 8;
+const MIN_GUESTS_MAIN = 2;
 const MAX_GUESTS_MAIN = 15;
 
 const ORIGIN_X = 150;
@@ -153,11 +153,11 @@ export default function MesasResumenOrganizador() {
         );
 
         const mesasFiltradas = mesasData
-          .filter((m) => m.is_used || m.is_main)
+          .filter((m) => m.guest_groups?.length > 0) // Solo mesas con grupos asignados
           .sort((a, b) => {
             const isMainA = a.is_main || a.table_id.toLowerCase().includes("principal");
             const isMainB = b.is_main || b.table_id.toLowerCase().includes("principal");
-            if (isMainA && !isMainB) return -1;
+            if (isMainA && !isMainB) return -1; // Mesa Principal primero
             if (!isMainA && isMainB) return 1;
             const getNumber = (table_id: string) => {
               if (table_id.toLowerCase().includes("principal")) return -1;
@@ -290,8 +290,6 @@ export default function MesasResumenOrganizador() {
             grupo.details || "",
           ]);
         });
-      } else {
-        guestTableData.push(["Sin asignar", "", "", "", mesaNombre, ""]);
       }
     });
 
@@ -308,7 +306,7 @@ export default function MesasResumenOrganizador() {
       0
     );
     guestTableData.push([]);
-    guestTableData.push(["Totales", totalAdultos, totalNinos, totalBebes, "", ""]);
+    guestTableData.push(["Totales", totalAdultos || "", totalNinos || "", totalBebes || "", "", ""]);
 
     const decoracionData = formatDecoracion(decoracion).map((item) => [
       item.tablecloth,
@@ -474,18 +472,6 @@ export default function MesasResumenOrganizador() {
                     const mesaNombre = mesa.is_main
                       ? "Mesa Principal"
                       : mesa.table_name || `Mesa ${mesa.table_id.replace(/\D/g, "") || index + 1}`;
-                    if (!mesa.guest_groups?.length) {
-                      return [
-                        <tr key={mesa.id} className="border-b border-gray-200 bg-white hover:bg-orange-50">
-                          <td className="p-3 text-gray-700">{mesaNombre}</td>
-                          <td className="p-3 text-gray-700">Sin asignar</td>
-                          <td className="p-3 text-gray-700"></td>
-                          <td className="p-3 text-gray-700"></td>
-                          <td className="p-3 text-gray-700"></td>
-                          <td className="p-3 text-gray-700"></td>
-                        </tr>,
-                      ];
-                    }
                     return mesa.guest_groups.map((grupo, i) => (
                       <tr
                         key={`${mesa.id}-${grupo.id || i}`}
@@ -493,9 +479,9 @@ export default function MesasResumenOrganizador() {
                       >
                         <td className="p-3 text-gray-700">{i === 0 ? mesaNombre : ""}</td>
                         <td className="p-3 text-gray-700">{grupo.name}</td>
-                        <td className="p-3 text-gray-700">{grupo.numAdults || ""}</td>
-                        <td className="p-3 text-gray-700">{grupo.numChildren || ""}</td>
-                        <td className="p-3 text-gray-700">{grupo.numBabies || ""}</td>
+                        <td className="p-3 text-gray-700">{grupo.numAdults > 0 ? grupo.numAdults : ""}</td>
+                        <td className="p-3 text-gray-700">{grupo.numChildren > 0 ? grupo.numChildren : ""}</td>
+                        <td className="p-3 text-gray-700">{grupo.numBabies > 0 ? grupo.numBabies : ""}</td>
                         <td className="p-3 text-gray-700">{grupo.details || ""}</td>
                       </tr>
                     ));
@@ -503,7 +489,7 @@ export default function MesasResumenOrganizador() {
                 ) : (
                   <tr>
                     <td colSpan={6} className="p-6 text-center text-gray-500">
-                      No hay mesas registradas.
+                      No hay mesas con grupos asignados.
                     </td>
                   </tr>
                 )}
@@ -515,19 +501,19 @@ export default function MesasResumenOrganizador() {
                       {mesas.reduce(
                         (sum, mesa) => sum + (mesa.guest_groups?.reduce((s, g) => s + (g.numAdults || 0), 0) || 0),
                         0
-                      )}
+                      ) || ""}
                     </td>
                     <td className="p-3 text-gray-800">
                       {mesas.reduce(
                         (sum, mesa) => sum + (mesa.guest_groups?.reduce((s, g) => s + (g.numChildren || 0), 0) || 0),
                         0
-                      )}
+                      ) || ""}
                     </td>
                     <td className="p-3 text-gray-800">
                       {mesas.reduce(
                         (sum, mesa) => sum + (mesa.guest_groups?.reduce((s, g) => s + (g.numBabies || 0), 0) || 0),
                         0
-                      )}
+                      ) || ""}
                     </td>
                     <td className="p-3"></td>
                   </tr>

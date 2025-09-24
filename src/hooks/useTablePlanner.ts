@@ -4,7 +4,7 @@ import { Table, GuestGroup } from '../types/types';
 
 const MIN_GUESTS = 8;
 const MAX_GUESTS = 11;
-const MIN_GUESTS_MAIN = 8;
+const MIN_GUESTS_MAIN = 2;
 const MAX_GUESTS_MAIN = 15;
 
 const ORIGIN_X = 150;
