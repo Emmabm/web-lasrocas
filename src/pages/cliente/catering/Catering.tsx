@@ -18,6 +18,7 @@ const Catering = () => {
   const [loading, setLoading] = useState(true);
   const [modalMessage, setModalMessage] = useState<string | null>(null);
   const [eventoEstado, setEventoEstado] = useState<'activo' | 'inactivo' | null>(null);
+  const [menuSeleccionado, setLocalMenuSeleccionado] = useState<string | null>(null);
 
   const query = new URLSearchParams(location.search);
   const token = query.get('token');
@@ -33,7 +34,7 @@ const Catering = () => {
       try {
         const { data, error } = await supabase
           .from('eventos')
-          .select('id, estado')
+          .select('id, estado, menu, catering_confirmado')
           .eq('token_acceso', token)
           .single();
 
@@ -44,10 +45,10 @@ const Catering = () => {
         }
 
         setEventoEstado(data.estado);
+        setLocalMenuSeleccionado(data.menu); // Cargar menú desde Supabase
+        setMenuSeleccionado(data.menu); // Actualizar contexto
         if (data.estado === 'inactivo') {
           setModalMessage('El evento está inactivo. No podés realizar modificaciones.');
-          setLoading(false);
-          return;
         }
 
         setLoading(false);
@@ -58,7 +59,7 @@ const Catering = () => {
     };
 
     verifyToken();
-  }, [token]);
+  }, [token, setMenuSeleccionado]);
 
   const handleMenuSelect = async (menuId: string) => {
     if (!token) {
@@ -72,6 +73,7 @@ const Catering = () => {
     }
 
     try {
+      // Verificar estado del evento
       const { data, error } = await supabase
         .from('eventos')
         .select('estado')
@@ -88,6 +90,19 @@ const Catering = () => {
         return;
       }
 
+      // Guardar selección en Supabase
+      const { error: updateError } = await supabase
+        .from('eventos')
+        .update({ menu: menuId, catering_confirmado: true })
+        .eq('token_acceso', token);
+
+      if (updateError) {
+        setError('Error al guardar la selección del menú');
+        return;
+      }
+
+      // Actualizar estado local y contexto
+      setLocalMenuSeleccionado(menuId);
       setMenuSeleccionado(menuId);
       navigate(`/catering/${menuId}/recepcion?token=${token}`);
     } catch (err) {
@@ -136,16 +151,20 @@ const Catering = () => {
           {menus.map((menu) => (
             <div
               key={menu.id}
-              className="p-6 rounded-xl border-2 border-gray-200 bg-white text-center transition-all duration-300 hover:border-[#FF6B35] hover:shadow-xl hover:-translate-y-1"
+              className={`p-6 rounded-xl border-2 border-gray-200 bg-white text-center transition-all duration-300 hover:border-[#FF6B35] hover:shadow-xl hover:-translate-y-1 ${
+                menuSeleccionado === menu.id ? 'border-[#FF6B35] shadow-xl' : ''
+              }`}
             >
               <h2 className="text-xl font-semibold text-gray-800 mb-2">{menu.nombre}</h2>
               <p className="text-gray-600 text-sm">{menu.descripcion}</p>
               <button
                 onClick={() => handleMenuSelect(menu.id)}
-                className={`mt-4 bg-[#FF6B35] text-white px-4 py-2 rounded-md hover:bg-[#e55a2e] transition ${isBlocked ? 'opacity-50 cursor-not-allowed' : ''}`}
+                className={`mt-4 bg-[#FF6B35] text-white px-4 py-2 rounded-md hover:bg-[#e55a2e] transition ${
+                  isBlocked ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
                 disabled={isBlocked}
               >
-                Seleccionar
+                {menuSeleccionado === menu.id ? 'Seleccionado' : 'Seleccionar'}
               </button>
             </div>
           ))}

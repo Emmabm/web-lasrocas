@@ -13,26 +13,43 @@ const Header: React.FC = () => {
 
   const urlToken = new URLSearchParams(location.search).get('token');
 
-  // Efecto para persistir el token y el menú seleccionado
+  // Efecto para cargar el token y el menú desde Supabase
   useEffect(() => {
     const activeToken = urlToken || token;
     if (!activeToken) {
       return;
     }
 
-    // Persiste el token en el contexto
+    // Persistir el token en el contexto
     if (urlToken && token !== urlToken) {
       console.log('Header.tsx - Persistiendo token:', { token, urlToken });
       setToken(urlToken);
     }
 
-    // Intenta determinar el tipo de menú basándose en la URL
-    const pathSegments = location.pathname.split('/');
-    const pathMenu = pathSegments.find(segment => segment.startsWith('menu'));
-    if (pathMenu && menuSeleccionado !== pathMenu) {
-      setMenuSeleccionado(pathMenu);
-    }
-  }, [urlToken, token, setToken, location.pathname, menuSeleccionado, setMenuSeleccionado]);
+    // Cargar el menú desde Supabase
+    const fetchMenu = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('eventos')
+          .select('menu')
+          .eq('token_acceso', activeToken)
+          .single();
+
+        if (error || !data) {
+          console.error('Error fetching menu:', error);
+          return;
+        }
+
+        if (data.menu && menuSeleccionado !== data.menu) {
+          setMenuSeleccionado(data.menu);
+        }
+      } catch (err) {
+        console.error('Error al conectar con Supabase:', err);
+      }
+    };
+
+    fetchMenu();
+  }, [urlToken, token, setToken, setMenuSeleccionado]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -52,7 +69,6 @@ const Header: React.FC = () => {
     await supabase.auth.signOut();
     navigate('/auth');
   };
-
 
   if (location.pathname.includes('/organizador/panel') || location.pathname.startsWith('/auth')) return null;
 

@@ -9,7 +9,7 @@ const Home: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [modalMessage, setModalMessage] = useState<string | null>(null);
   const [searchParams] = useSearchParams();
-  const { setPaso, setToken } = useUserContext();
+  const { setPaso, setToken, setMenuSeleccionado, menuSeleccionado } = useUserContext();
 
   useEffect(() => {
     const fetchEvent = async () => {
@@ -26,7 +26,7 @@ const Home: React.FC = () => {
       console.log('Buscando evento con token:', token);
       const { data, error } = await supabase
         .from('eventos')
-        .select('id, tipo, nombre, estado')
+        .select('id, tipo, nombre, estado, menu') // Agregamos 'menu'
         .eq('token_acceso', token)
         .single();
 
@@ -45,11 +45,12 @@ const Home: React.FC = () => {
       }
 
       setEventName(data?.nombre || 'Evento');
+      setMenuSeleccionado(data.menu); // Actualizar el contexto con el menú guardado
       setPaso('cliente'); // Establecer paso inicial
       setLoading(false);
     };
     fetchEvent();
-  }, [searchParams, setPaso, setToken]);
+  }, [searchParams, setPaso, setToken, setMenuSeleccionado]);
 
   if (loading) return (
     <div className="text-center py-8">Cargando...</div>
@@ -104,11 +105,13 @@ const Home: React.FC = () => {
               step: 2,
               title: 'Diseña tu Salón',
               desc: 'Completa la distribución y decoración de las mesas.',
+              hidden: menuSeleccionado === 'menu4', // Ocultar si menu4 está seleccionado
             },
             {
               step: 3,
               title: 'Organiza la Cena',
               desc: 'Si elegiste el menú 4, asigná los invitados a la cena.',
+              hidden: menuSeleccionado !== 'menu4', // Mostrar solo si menu4 está seleccionado
             },
             {
               step: 4,
@@ -125,7 +128,7 @@ const Home: React.FC = () => {
               title: 'Añade Observaciones',
               desc: 'Ingresa notas o detalles especiales para tu evento.',
             },
-          ].map(({ step, title, desc }) => (
+          ].filter(step => !step.hidden).map(({ step, title, desc }) => (
             <div
               key={step}
               className="flex flex-col items-center bg-white rounded-2xl shadow-md p-6 transition transform hover:-translate-y-1 hover:shadow-lg"
