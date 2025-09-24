@@ -6,7 +6,7 @@ import { useUserContext } from '../../hooks/useUserContext';
 
 export default function EventoPage() {
   const { token } = useParams();
-  const { setToken } = useUserContext();
+  const { setMenuSeleccionado, setToken, menuSeleccionado } = useUserContext();
   const [evento, setEvento] = useState<any>(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -23,7 +23,7 @@ export default function EventoPage() {
       console.log('[token].tsx - Buscando evento con token:', token);
       const { data, error } = await supabase
         .from('eventos')
-        .select('id, tipo, nombre, estado')
+        .select('id, tipo, nombre, estado, menu, catering_confirmado')
         .eq('token_acceso', token)
         .single();
 
@@ -37,11 +37,16 @@ export default function EventoPage() {
 
       console.log('[token].tsx - Evento encontrado:', data);
       setEvento(data);
+      if (data.menu && data.menu !== menuSeleccionado) {
+        console.log('[token].tsx - Actualizando menuSeleccionado:', data.menu);
+        setMenuSeleccionado(data.menu);
+      }
+
       setCargando(false);
     };
 
     cargarEvento();
-  }, [token, setToken]);
+  }, [token, setMenuSeleccionado, setToken, menuSeleccionado]);
 
   if (cargando) return <p className="p-6 text-center">⏳ Cargando evento...</p>;
   if (error) return <p className="p-6 text-center text-red-600">{error}</p>;
@@ -81,6 +86,20 @@ export default function EventoPage() {
               <p className="text-lg font-semibold">📍 Catering</p>
               <p>Personalizado y adaptado a tu estilo.</p>
             </div>
+
+            {evento.menu !== 'menu4' && (
+              <div className="bg-gray-100 rounded-lg p-4">
+                <p className="text-lg font-semibold">🪑 Mesas</p>
+                <p>Organización simple y dinámica.</p>
+              </div>
+            )}
+
+            {evento.menu === 'menu4' && (
+              <div className="bg-gray-100 rounded-lg p-4">
+                <p className="text-lg font-semibold">📋 Cena</p>
+                <p>Planificación por islas y menú especial.</p>
+              </div>
+            )}
 
             <div className="bg-gray-100 rounded-lg p-4">
               <p className="text-lg font-semibold">⏰ Horarios</p>

@@ -9,7 +9,7 @@ const Home: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [modalMessage, setModalMessage] = useState<string | null>(null);
   const [searchParams] = useSearchParams();
-  const { setPaso, setToken } = useUserContext();
+  const { setPaso, setToken, setMenuSeleccionado, menuSeleccionado } = useUserContext();
 
   useEffect(() => {
     const fetchEvent = async () => {
@@ -26,7 +26,7 @@ const Home: React.FC = () => {
       console.log('Home.tsx - Buscando evento con token:', token);
       const { data, error } = await supabase
         .from('eventos')
-        .select('id, tipo, nombre, estado')
+        .select('id, tipo, nombre, estado, menu, catering_confirmado')
         .eq('token_acceso', token)
         .single();
 
@@ -46,10 +46,15 @@ const Home: React.FC = () => {
 
       setEventName(data?.nombre || 'Evento');
       setPaso('cliente'); // Establecer paso inicial
+      if (data.menu && data.menu !== menuSeleccionado) {
+        console.log('Home.tsx - Actualizando menuSeleccionado:', data.menu);
+        setMenuSeleccionado(data.menu);
+      }
+
       setLoading(false);
     };
     fetchEvent();
-  }, [searchParams, setPaso, setToken]);
+  }, [searchParams, setPaso, setToken, setMenuSeleccionado, menuSeleccionado]);
 
   if (loading) return (
     <div className="text-center py-8">Cargando...</div>

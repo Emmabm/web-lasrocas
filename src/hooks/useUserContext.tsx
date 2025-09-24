@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { useLocation, useSearchParams } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 
 type Rol = 'admin' | 'organizador' | 'cliente' | null;
@@ -23,27 +23,15 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [menuSeleccionado, setMenuSeleccionado] = useState<string | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const location = useLocation();
-  const [searchParams] = useSearchParams();
 
-  // Cargar el menú desde Supabase al montar o cambiar la ruta/token
+  // Cargar el menú desde Supabase al cambiar la ruta o token
   useEffect(() => {
-    const urlToken = searchParams.get('token') || (location.pathname.match(/\/evento\/(.+)/)?.[1]);
+    const urlToken = new URLSearchParams(location.search).get('token');
     const activeToken = urlToken || token;
-    console.log('UserProvider - Active token:', activeToken);
-    if (!activeToken) {
-      console.log('UserProvider - No token available');
-      return;
-    }
-
-    // Persistir el token en el contexto
-    if (urlToken && urlToken !== token) {
-      console.log('UserProvider - Persistiendo token:', urlToken);
-      setToken(urlToken);
-    }
+    if (!activeToken) return;
 
     const fetchMenu = async () => {
       try {
-        console.log('UserProvider - Buscando evento con token:', activeToken);
         const { data, error } = await supabase
           .from('eventos')
           .select('menu, estado, catering_confirmado')
@@ -55,7 +43,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return;
         }
 
-        console.log('UserProvider - Evento encontrado:', data);
         if (data.menu && menuSeleccionado !== data.menu) {
           console.log('UserProvider - Actualizando menuSeleccionado:', data.menu);
           setMenuSeleccionado(data.menu);
@@ -70,7 +57,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     fetchMenu();
-  }, [location, searchParams, token, menuSeleccionado]);
+  }, [location, token, menuSeleccionado]);
 
   return (
     <UserContext.Provider value={{ role, setRole, paso, setPaso, menuSeleccionado, setMenuSeleccionado, token, setToken }}>
