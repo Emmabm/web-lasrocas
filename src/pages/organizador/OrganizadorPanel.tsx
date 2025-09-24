@@ -1,3 +1,4 @@
+// OrganizadorResumenOrganizador.tsx
 import { useState, useEffect } from 'react';
 import { Pencil, Trash2, Copy, CheckCircle, XCircle } from 'lucide-react';
 import { supabase } from '../../supabaseClient';
@@ -6,7 +7,7 @@ import { User } from '@supabase/supabase-js';
 
 const tiposValidos = ['fiesta15', 'casamiento', 'cumpleaños', 'egresados'];
 
-export default function OrganizadorPanel() {
+export default function OrganizadorResumenOrganizador() {
   const [eventos, setEventos] = useState<any[]>([]);
   const [tipoNuevo, setTipoNuevo] = useState('');
   const [nombreNuevo, setNombreNuevo] = useState('');
@@ -146,7 +147,11 @@ export default function OrganizadorPanel() {
       return;
     }
 
-    setEventos([...eventos, nuevo[0]]);
+    // Agregar el nuevo evento al estado, manteniendo el orden por fecha
+    setEventos(prev => {
+      const newEventos = [...prev, nuevo[0]];
+      return newEventos.sort((a, b) => a.fecha.localeCompare(b.fecha));
+    });
     setTipoNuevo('');
     setNombreNuevo('');
     setFechaNueva('');
