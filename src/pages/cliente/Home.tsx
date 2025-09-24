@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../../supabaseClient';
 import { useUserContext } from '../../hooks/useUserContext';
 
@@ -9,14 +9,13 @@ const Home: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [modalMessage, setModalMessage] = useState<string | null>(null);
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
-  const { setPaso, setToken, setMenuSeleccionado } = useUserContext();
+  const { setPaso, setToken, setMenuSeleccionado, menuSeleccionado } = useUserContext();
 
   useEffect(() => {
     const fetchEvent = async () => {
       setLoading(true);
       const token = searchParams.get('token');
-      console.log('Token extraído:', token);
+      console.log('Home.tsx - Token extraído:', token);
       if (!token) {
         setError('No se proporcionó un token');
         setLoading(false);
@@ -24,7 +23,7 @@ const Home: React.FC = () => {
       }
 
       setToken(token); // Guardar token en el contexto
-      console.log('Buscando evento con token:', token);
+      console.log('Home.tsx - Buscando evento con token:', token);
       const { data, error } = await supabase
         .from('eventos')
         .select('id, tipo, nombre, estado, menu, catering_confirmado')
@@ -32,13 +31,13 @@ const Home: React.FC = () => {
         .single();
 
       if (error || !data) {
-        console.error('Error fetching event:', error);
+        console.error('Home.tsx - Error fetching event:', error);
         setError('Error al cargar el evento: ' + (error?.message || 'Evento no encontrado.'));
         setLoading(false);
         return;
       }
 
-      console.log('Evento encontrado:', data);
+      console.log('Home.tsx - Evento encontrado:', data);
       if (data.estado === 'inactivo') {
         setModalMessage('El evento está inactivo. No podés realizar modificaciones.');
         setLoading(false);
@@ -46,23 +45,16 @@ const Home: React.FC = () => {
       }
 
       setEventName(data?.nombre || 'Evento');
-      setPaso('cliente'); 
-      setMenuSeleccionado(data.menu); 
-      console.log('Menú seleccionado:', data.menu);
-
-      
-      if (data.menu) {
-        if (data.menu === 'menu4' && data.catering_confirmado) {
-          navigate(`/invitados-cena?token=${token}`);
-        } else if (data.menu) {
-          navigate(`/catering/${data.menu}/recepcion?token=${token}`);
-        }
+      setPaso('cliente'); // Establecer paso inicial
+      if (data.menu && data.menu !== menuSeleccionado) {
+        console.log('Home.tsx - Actualizando menuSeleccionado:', data.menu);
+        setMenuSeleccionado(data.menu);
       }
 
       setLoading(false);
     };
     fetchEvent();
-  }, [searchParams, setPaso, setToken, setMenuSeleccionado, navigate]);
+  }, [searchParams, setPaso, setToken, setMenuSeleccionado, menuSeleccionado]);
 
   if (loading) return (
     <div className="text-center py-8">Cargando...</div>
@@ -97,7 +89,6 @@ const Home: React.FC = () => {
         </p>
       </section>
 
-      {/* Pasos mejorados */}
       <section className="bg-gray-50 rounded-2xl p-10 max-w-6xl mx-auto mt-20 shadow-md">
         <div className="flex flex-col items-center mb-10">
           <h2 className="text-3xl font-bold text-center text-gray-800">¿Cómo funciona?</h2>
