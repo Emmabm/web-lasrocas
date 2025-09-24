@@ -77,13 +77,87 @@ const Header: React.FC = () => {
         </div>
         <nav className="md:flex md:items-center mt-3 md:mt-0">
           <ul className="flex justify-around md:space-x-8">
-            <li><NavLink to={getPathWithToken('/cliente')} className={({ isActive }) => isActive ? 'text-white font-medium' : 'text-white/90 hover:text-white'}><Home className="h-5 w-5"/><span className="text-xs mt-1">Inicio</span></NavLink></li>
-            <li><NavLink to={getPathWithToken('/catering')} className={({ isActive }) => isActive ? 'text-white font-medium' : 'text-white/90 hover:text-white'}><Utensils className="h-5 w-5"/><span className="text-xs mt-1">Catering</span></NavLink></li>
-            {menuSeleccionado !== 'menu4' && <li><NavLink to={getPathWithToken('/mesa')} className={({ isActive }) => isActive ? 'text-white font-medium' : 'text-white/90 hover:text-white'}><LayoutGrid className="h-5 w-5"/><span className="text-xs mt-1">Mesas</span></NavLink></li>}
-            {menuSeleccionado === 'menu4' && <li><NavLink to={getPathWithToken('/invitados-cena')} className={({ isActive }) => isActive ? 'text-white font-medium' : 'text-white/90 hover:text-white'}><Users className="h-5 w-5"/><span className="text-xs mt-1">Cena</span></NavLink></li>}
-            <li><NavLink to={getPathWithToken('/horarios')} className={({ isActive }) => isActive ? 'text-white font-medium' : 'text-white/90 hover:text-white'}><Calendar className="h-5 w-5"/><span className="text-xs mt-1">Horarios</span></NavLink></li>
-            <li><NavLink to={getPathWithToken('/invitados')} className={({ isActive }) => isActive ? 'text-white font-medium' : 'text-white/90 hover:text-white'}><Users className="h-5 w-5"/><span className="text-xs mt-1">Baile</span></NavLink></li>
-            <li><NavLink to={getPathWithToken('/observaciones')} className={({ isActive }) => isActive ? 'text-white font-medium' : 'text-white/90 hover:text-white'}><FileText className="h-5 w-5"/><span className="text-xs mt-1">Observaciones</span></NavLink></li>
+            <li>
+              <NavLink
+                to={getPathWithToken('/cliente')}
+                className={({ isActive }) =>
+                  `flex flex-col items-center transition-colors ${isActive ? 'text-white font-medium' : 'text-white/90 hover:text-white'}`
+                }
+              >
+                <Home className="h-5 w-5"/>
+                <span className="text-xs mt-1">Inicio</span>
+              </NavLink>
+            </li>
+            <li>
+              <NavLink
+                to={getPathWithToken('/catering')}
+                className={({ isActive }) =>
+                  `flex flex-col items-center transition-colors ${isActive ? 'text-white font-medium' : 'text-white/90 hover:text-white'}`
+                }
+              >
+                <Utensils className="h-5 w-5"/>
+                <span className="text-xs mt-1">Catering</span>
+              </NavLink>
+            </li>
+            {menuSeleccionado !== 'menu4' && (
+              <li>
+                <NavLink
+                  to={getPathWithToken('/mesa')}
+                  className={({ isActive }) =>
+                    `flex flex-col items-center transition-colors ${isActive ? 'text-white font-medium' : 'text-white/90 hover:text-white'}`
+                  }
+                >
+                  <LayoutGrid className="h-5 w-5"/>
+                  <span className="text-xs mt-1">Mesas</span>
+                </NavLink>
+              </li>
+            )}
+            {menuSeleccionado === 'menu4' && (
+              <li>
+                <NavLink
+                  to={getPathWithToken('/invitados-cena')}
+                  className={({ isActive }) =>
+                    `flex flex-col items-center transition-colors ${isActive ? 'text-white font-medium' : 'text-white/90 hover:text-white'}`
+                  }
+                >
+                  <Users className="h-5 w-5"/>
+                  <span className="text-xs mt-1">Cena</span>
+                </NavLink>
+              </li>
+            )}
+            <li>
+              <NavLink
+                to={getPathWithToken('/horarios')}
+                className={({ isActive }) =>
+                  `flex flex-col items-center transition-colors ${isActive ? 'text-white font-medium' : 'text-white/90 hover:text-white'}`
+                }
+              >
+                <Calendar className="h-5 w-5"/>
+                <span className="text-xs mt-1">Horarios</span>
+              </NavLink>
+            </li>
+            <li>
+              <NavLink
+                to={getPathWithToken('/invitados')}
+                className={({ isActive }) =>
+                  `flex flex-col items-center transition-colors ${isActive ? 'text-white font-medium' : 'text-white/90 hover:text-white'}`
+                }
+              >
+                <Users className="h-5 w-5"/>
+                <span className="text-xs mt-1">Baile</span>
+              </NavLink>
+            </li>
+            <li>
+              <NavLink
+                to={getPathWithToken('/observaciones')}
+                className={({ isActive }) =>
+                  `flex flex-col items-center transition-colors ${isActive ? 'text-white font-medium' : 'text-white/90 hover:text-white'}`
+                }
+              >
+                <FileText className="h-5 w-5"/>
+                <span className="text-xs mt-1">Observaciones</span>
+              </NavLink>
+            </li>
           </ul>
         </nav>
       </div>
