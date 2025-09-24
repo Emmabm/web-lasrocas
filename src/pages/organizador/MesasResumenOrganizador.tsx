@@ -33,7 +33,7 @@ interface Mesa {
   descripcion: string | null;
   is_main: boolean;
   is_used: boolean;
-  guest_groups: GuestGroup[] | null;
+  guest_groups: GuestGroup[];
 }
 
 interface Decoracion {
@@ -43,6 +43,50 @@ interface Decoracion {
   napkin_color: string | null;
   centerpiece: string | null;
 }
+
+const MIN_GUESTS = 8;
+const MAX_GUESTS = 11;
+const MIN_GUESTS_MAIN = 8;
+const MAX_GUESTS_MAIN = 15;
+
+const ORIGIN_X = 150;
+const ORIGIN_Y = 120;
+const COL_SPACING = 100;
+const ROW_SPACING = 90;
+const CIRCLE_SIZE = 60;
+const RECT_WIDTH = 130;
+const RECT_HEIGHT = 60;
+
+const initialTables: Table[] = [
+  { id: 'ESCENARIO', position: { x: 365, y: 40 }, shape: 'rectangle', width: 190, height: 60, isAssignable: false, isMain: false, isUsed: false, numAdults: 0, numChildren: 0, numBabies: 0, descripcion: undefined, guestGroups: [], tableName: 'ESCENARIO', guests: [] },
+  { id: 'DJ', position: { x: 90, y: 480 }, shape: 'square', width: 110, height: 110, isAssignable: false, isMain: false, isUsed: false, numAdults: 0, numChildren: 0, numBabies: 0, descripcion: undefined, guestGroups: [], tableName: 'DJ', guests: [] },
+  { id: 'OFICINA', position: { x: 660, y: 480 }, shape: 'rectangle', width: 240, height: 110, isAssignable: false, isMain: false, isUsed: false, numAdults: 0, numChildren: 0, numBabies: 0, descripcion: undefined, guestGroups: [], tableName: 'OFICINA', guests: [] },
+  { id: 'PASARELA', position: { x: 320, y: 510 }, shape: 'rectangle', width: 500, height: 15, isAssignable: false, isMain: false, isUsed: false, numAdults: 0, numChildren: 0, numBabies: 0, descripcion: undefined, guestGroups: [], tableName: 'PASARELA', guests: [] },
+  ...[
+    [-1, 1], [-1, 0], [0.2, 0], [0.2, 1], [0, 2], [0.7, 3], [1.2, 3.8], [2.3, 3.8],
+    [1.8, 2.5], [1.5, 1.1], [2.2, 0], [3, 1], [3.3, 2], [3, 2.8], [3.5, 3.8],
+    [4.7, 3], [4.7, 2], [4.7, 1], [4.7, 0], [5.6, 0], [5.6, 1], [5.6, 2], [5.6, 3]
+  ].map(([x, y], i): Table => ({
+    id: i === 10 ? 'Principal' : `M${i + 1 - (i >= 11 ? 1 : 0)}`,
+    position: { x: x * COL_SPACING + ORIGIN_X, y: y * ROW_SPACING + ORIGIN_Y },
+    shape: i === 10 ? 'rectangle' : 'circle',
+    width: i === 10 ? RECT_WIDTH : CIRCLE_SIZE,
+    height: i === 10 ? RECT_HEIGHT : CIRCLE_SIZE,
+    isAssignable: true,
+    isMain: i === 10,
+    isUsed: false,
+    tableName: i === 10 ? 'Principal' : undefined,
+    tablecloth: 'white',
+    napkinColor: 'white',
+    centerpiece: 'none',
+    numAdults: 0,
+    numChildren: 0,
+    numBabies: 0,
+    descripcion: undefined,
+    guestGroups: [],
+    guests: [],
+  })),
+];
 
 export default function MesasResumenOrganizador() {
   const [mesas, setMesas] = useState<Mesa[]>([]);
@@ -108,19 +152,33 @@ export default function MesasResumenOrganizador() {
           }))
         );
 
-        const mesasOrdenadas = mesasData.sort((a, b) => {
-          const isMainA = a.is_main || a.table_id.toLowerCase().includes("principal");
-          const isMainB = b.is_main || b.table_id.toLowerCase().includes("principal");
-          if (isMainA && !isMainB) return -1;
-          if (!isMainA && isMainB) return 1;
-          const getNumber = (table_id: string) => {
-            if (table_id.toLowerCase().includes("principal")) return -1;
-            const match = table_id.match(/\d+/);
-            return match ? parseInt(match[0], 10) : Infinity;
-          };
-          return getNumber(a.table_id) - getNumber(b.table_id);
-        });
-        setMesas(mesasOrdenadas);
+        const mesasFiltradas = mesasData
+          .filter((m) => m.is_used || m.is_main)
+          .sort((a, b) => {
+            const isMainA = a.is_main || a.table_id.toLowerCase().includes("principal");
+            const isMainB = b.is_main || b.table_id.toLowerCase().includes("principal");
+            if (isMainA && !isMainB) return -1;
+            if (!isMainA && isMainB) return 1;
+            const getNumber = (table_id: string) => {
+              if (table_id.toLowerCase().includes("principal")) return -1;
+              const match = table_id.match(/\d+/);
+              return match ? parseInt(match[0], 10) : Infinity;
+            };
+            return getNumber(a.table_id) - getNumber(b.table_id);
+          })
+          .slice(0, 24);
+
+        console.log(
+          "Mesas ordenadas:",
+          mesasFiltradas.map((m) => ({
+            id: m.id,
+            table_id: m.table_id,
+            is_main: m.is_main,
+            guest_groups: m.guest_groups,
+          }))
+        );
+
+        setMesas(mesasFiltradas);
       }
 
       const { data: decoracionData, error: decoracionError } = await supabase
@@ -146,35 +204,44 @@ export default function MesasResumenOrganizador() {
   };
 
   // Mapear mesas al formato Table para FloorPlan
-  const tables: Table[] = mesas.map((mesa, index) => ({
-    id: mesa.table_id,
-    tableName: mesa.table_name || (mesa.is_main ? "Mesa Principal" : `Mesa ${mesa.table_id.replace(/\D/g, "")}`),
-    isMain: mesa.is_main,
-    isUsed: mesa.is_used,
-    isAssignable: true,
-    guests: mesa.guest_groups ? mesa.guest_groups.map((group) => group.name) : [],
-    guestGroups: mesa.guest_groups || [],
-    position: {
-      x: 100 + ((index % 6) * 100), // Grid simple: 6 mesas por fila
-      y: 100 + Math.floor(index / 6) * 100,
-    },
-    width: 50,
-    height: 50,
-    shape: "circle",
-  }));
+  const tables: Table[] = initialTables.map((table) => {
+    const dbTable = mesas.find((m) => m.table_id === table.id);
+    return {
+      ...table,
+      tableName: dbTable?.table_name || (table.isMain ? 'Principal' : table.tableName),
+      isUsed: dbTable ? dbTable.is_used || dbTable.is_main : table.isUsed,
+      numAdults: dbTable?.num_adults || 0,
+      numChildren: dbTable?.num_children || 0,
+      numBabies: dbTable?.num_babies || 0,
+      descripcion: dbTable?.descripcion || undefined,
+      guestGroups: dbTable?.guest_groups || [],
+      guests: dbTable?.guest_groups ? dbTable.guest_groups.map((group) => group.name) : [],
+      tablecloth: decoracion?.tablecloth || 'white',
+      napkinColor: decoracion?.napkin_color || 'white',
+      centerpiece: decoracion?.centerpiece || 'none',
+    };
+  });
 
   // Preparar datos para FloorPlan
-  const tableWarnings: string[] = [];
+  const tableWarnings: string[] = tables
+    .filter((t) => t.isAssignable && t.isUsed)
+    .filter((t) => {
+      const total = (t.numAdults || 0) + (t.numChildren || 0) + (t.numBabies || 0);
+      return t.isMain
+        ? total < MIN_GUESTS_MAIN || total > MAX_GUESTS_MAIN
+        : total < MIN_GUESTS || total > MAX_GUESTS;
+    })
+    .map((t) => t.id);
+
   const tableGuests = Object.fromEntries(
     tables.map((t) => [
       t.id,
       (t.guestGroups || []).reduce(
-        (sum, group) => sum + group.numAdults + group.numChildren + group.numBabies,
+        (sum, group) => sum + (group.numAdults || 0) + (group.numChildren || 0) + (group.numBabies || 0),
         0
       ),
     ])
   );
-  const tableCapacity = 10;
 
   const exportToPDF = async () => {
     if (croquisRef.current) {
@@ -376,7 +443,7 @@ export default function MesasResumenOrganizador() {
               onTableSelect={() => {}}
               tableWarnings={tableWarnings}
               tableGuests={tableGuests}
-              tableCapacity={tableCapacity}
+              tableCapacity={MAX_GUESTS}
             />
           </div>
           <button
