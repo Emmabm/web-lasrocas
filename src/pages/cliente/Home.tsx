@@ -46,11 +46,11 @@ const Home: React.FC = () => {
       }
 
       setEventName(data?.nombre || 'Evento');
-      setPaso('cliente'); // Establecer paso inicial
-      setMenuSeleccionado(data.menu); // Actualizar menú en el contexto
+      setPaso('cliente'); 
+      setMenuSeleccionado(data.menu); 
       console.log('Menú seleccionado:', data.menu);
 
-      // Redirigir según el menú y estado de catering
+      
       if (data.menu) {
         if (data.menu === 'menu4' && data.catering_confirmado) {
           navigate(`/invitados-cena?token=${token}`);
