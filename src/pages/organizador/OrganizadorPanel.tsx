@@ -440,7 +440,7 @@ export default function OrganizadorPanel() {
                             </>
                           )}
                         </button>
-                        {['catering', 'mesas', 'cena', 'horarios', 'baile', 'observaciones'].map((path) => (
+                        {['catering', 'mesas', 'cena', 'horarios', 'invitados', 'observaciones'].map((path) => (
                           <a
                             key={path}
                             href={`/organizador/evento/${e.id}/${path}`}

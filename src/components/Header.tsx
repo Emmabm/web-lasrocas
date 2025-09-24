@@ -16,12 +16,13 @@ const Header: React.FC = () => {
   // Efecto para cargar el token y el menú desde Supabase
   useEffect(() => {
     const activeToken = urlToken || token;
+    console.log('Header.tsx - Valores iniciales:', { activeToken, menuSeleccionado, urlToken, token });
     if (!activeToken) {
       return;
     }
 
     // Persistir el token en el contexto
-    if (urlToken && token !== urlToken) {
+    if (urlToken && urlToken !== token) {
       console.log('Header.tsx - Persistiendo token:', { token, urlToken });
       setToken(urlToken);
     }
@@ -31,7 +32,7 @@ const Header: React.FC = () => {
       try {
         const { data, error } = await supabase
           .from('eventos')
-          .select('menu')
+          .select('menu, estado')
           .eq('token_acceso', activeToken)
           .single();
 
@@ -41,7 +42,13 @@ const Header: React.FC = () => {
         }
 
         if (data.menu && menuSeleccionado !== data.menu) {
+          console.log('Header.tsx - Actualizando menuSeleccionado:', data.menu);
           setMenuSeleccionado(data.menu);
+        }
+
+        // Si el evento está inactivo, mostrar mensaje
+        if (data.estado === 'inactivo') {
+          console.warn('Evento inactivo');
         }
       } catch (err) {
         console.error('Error al conectar con Supabase:', err);
@@ -49,7 +56,7 @@ const Header: React.FC = () => {
     };
 
     fetchMenu();
-  }, [urlToken, token, setToken, setMenuSeleccionado]);
+  }, [urlToken, token, setToken, setMenuSeleccionado, menuSeleccionado]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {

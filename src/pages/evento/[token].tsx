@@ -1,14 +1,16 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../supabaseClient';
-import Guests from '../cliente/invitados/Guests'; // Asegurate de que este componente funcione con tu props actual
+import Guests from '../cliente/invitados/Guests';
+import { useUserContext } from '../../hooks/useUserContext';
 
 export default function EventoPage() {
   const { token } = useParams();
+  const navigate = useNavigate();
+  const { setMenuSeleccionado, setToken } = useUserContext();
   const [evento, setEvento] = useState<any>(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [menuSeleccionado, setMenuSeleccionado] = useState<string | null>(null);
 
   useEffect(() => {
     const cargarEvento = async () => {
@@ -18,25 +20,38 @@ export default function EventoPage() {
         return;
       }
 
+      setToken(token); // Guardar token en el contexto
       const { data, error } = await supabase
         .from('eventos')
-        .select('*')
+        .select('id, tipo, nombre, estado, menu, catering_confirmado')
         .eq('token_acceso', token)
         .single();
 
       if (error || !data) {
         setError('Evento no encontrado o link inválido.');
         setEvento(null);
-      } else {
-        setEvento(data);
-        setMenuSeleccionado(data.menu); // <-- guardamos el menú que ya eligió
+        setCargando(false);
+        return;
+      }
+
+      setEvento(data);
+      setMenuSeleccionado(data.menu); // Actualizar menú en el contexto
+      console.log('Menú seleccionado:', data.menu);
+
+      // Redirigir según el menú y estado de catering
+      if (data.menu) {
+        if (data.menu === 'menu4' && data.catering_confirmado) {
+          navigate(`/invitados-cena?token=${token}`);
+        } else if (data.menu) {
+          navigate(`/catering/${data.menu}/recepcion?token=${token}`);
+        }
       }
 
       setCargando(false);
     };
 
     cargarEvento();
-  }, [token]);
+  }, [token, setMenuSeleccionado, setToken, navigate]);
 
   if (cargando) return <p className="p-6 text-center">⏳ Cargando evento...</p>;
   if (error) return <p className="p-6 text-center text-red-600">{error}</p>;
@@ -78,14 +93,14 @@ export default function EventoPage() {
               <p>Personalizado y adaptado a tu estilo.</p>
             </div>
 
-            {menuSeleccionado !== 'menu4' && (
+            {evento.menu !== 'menu4' && (
               <div className="bg-gray-100 rounded-lg p-4">
                 <p className="text-lg font-semibold">🪑 Mesas</p>
                 <p>Organización simple y dinámica.</p>
               </div>
             )}
 
-            {menuSeleccionado === 'menu4' && (
+            {evento.menu === 'menu4' && (
               <div className="bg-gray-100 rounded-lg p-4">
                 <p className="text-lg font-semibold">📋 Cena</p>
                 <p>Planificación por islas y menú especial.</p>

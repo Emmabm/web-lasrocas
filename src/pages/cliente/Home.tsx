@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../supabaseClient';
 import { useUserContext } from '../../hooks/useUserContext';
 
@@ -9,7 +9,8 @@ const Home: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [modalMessage, setModalMessage] = useState<string | null>(null);
   const [searchParams] = useSearchParams();
-  const { setPaso, setToken } = useUserContext();
+  const navigate = useNavigate();
+  const { setPaso, setToken, setMenuSeleccionado } = useUserContext();
 
   useEffect(() => {
     const fetchEvent = async () => {
@@ -26,7 +27,7 @@ const Home: React.FC = () => {
       console.log('Buscando evento con token:', token);
       const { data, error } = await supabase
         .from('eventos')
-        .select('id, tipo, nombre, estado')
+        .select('id, tipo, nombre, estado, menu, catering_confirmado')
         .eq('token_acceso', token)
         .single();
 
@@ -46,10 +47,22 @@ const Home: React.FC = () => {
 
       setEventName(data?.nombre || 'Evento');
       setPaso('cliente'); // Establecer paso inicial
+      setMenuSeleccionado(data.menu); // Actualizar menú en el contexto
+      console.log('Menú seleccionado:', data.menu);
+
+      // Redirigir según el menú y estado de catering
+      if (data.menu) {
+        if (data.menu === 'menu4' && data.catering_confirmado) {
+          navigate(`/invitados-cena?token=${token}`);
+        } else if (data.menu) {
+          navigate(`/catering/${data.menu}/recepcion?token=${token}`);
+        }
+      }
+
       setLoading(false);
     };
     fetchEvent();
-  }, [searchParams, setPaso, setToken]);
+  }, [searchParams, setPaso, setToken, setMenuSeleccionado, navigate]);
 
   if (loading) return (
     <div className="text-center py-8">Cargando...</div>
