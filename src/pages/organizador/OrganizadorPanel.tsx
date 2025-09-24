@@ -10,6 +10,7 @@ export default function OrganizadorPanel() {
   const [eventos, setEventos] = useState<any[]>([]);
   const [tipoNuevo, setTipoNuevo] = useState('');
   const [nombreNuevo, setNombreNuevo] = useState('');
+  const [fechaNueva, setFechaNueva] = useState('');
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [nombreEditado, setNombreEditado] = useState('');
   const [user, setUser] = useState<User | null>(null);
@@ -45,7 +46,7 @@ export default function OrganizadorPanel() {
         .from('eventos')
         .select('id, tipo, nombre, fecha, created_at, token_acceso, estado')
         .eq('organizador_id', user.id)
-        .order('fecha', { ascending: true }); // <-- cambio aquí
+        .order('fecha', { ascending: true });
 
       if (error) {
         setModalMessage(`Error al cargar eventos: ${error.message}`);
@@ -60,7 +61,7 @@ export default function OrganizadorPanel() {
   }, [user, navigate]);
 
   const crearEvento = async () => {
-    if (!tipoNuevo || !nombreNuevo) {
+    if (!tipoNuevo || !nombreNuevo || !fechaNueva) {
       setModalMessage('Por favor, completa todos los campos');
       return;
     }
@@ -73,6 +74,27 @@ export default function OrganizadorPanel() {
 
     if (!user?.id) {
       setModalMessage('Usuario no identificado');
+      return;
+    }
+
+    // Validar formato de fecha
+    if (!/^\d{8}$/.test(fechaNueva)) {
+      setModalMessage('La fecha debe estar en formato AAAAMMDD (ej: 20250927)');
+      return;
+    }
+
+    // Validar que la fecha sea válida
+    const year = parseInt(fechaNueva.slice(0, 4));
+    const month = parseInt(fechaNueva.slice(4, 6)) - 1; // Meses en JavaScript van de 0 a 11
+    const day = parseInt(fechaNueva.slice(6, 8));
+    const date = new Date(year, month, day);
+    if (
+      isNaN(date.getTime()) ||
+      date.getFullYear() !== year ||
+      date.getMonth() !== month ||
+      date.getDate() !== day
+    ) {
+      setModalMessage('La fecha ingresada no es válida');
       return;
     }
 
@@ -101,7 +123,7 @@ export default function OrganizadorPanel() {
     const token =
       tipoNuevo.toLowerCase() +
       '-' +
-      new Date().toISOString().split('T')[0] +
+      fechaNueva +
       '-' +
       Date.now().toString(36);
 
@@ -111,6 +133,7 @@ export default function OrganizadorPanel() {
         {
           tipo: tipoNuevo,
           nombre: nombreNuevo,
+          fecha: fechaNueva,
           token_acceso: token,
           organizador_id: user.id,
           estado: 'activo',
@@ -126,6 +149,7 @@ export default function OrganizadorPanel() {
     setEventos([...eventos, nuevo[0]]);
     setTipoNuevo('');
     setNombreNuevo('');
+    setFechaNueva('');
 
     const clientLink = `${window.location.origin}/cliente?token=${token}`;
     await navigator.clipboard.writeText(clientLink);
@@ -329,7 +353,7 @@ export default function OrganizadorPanel() {
         {/* Crear evento */}
         <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
           <h2 className="text-xl font-semibold text-gray-700 mb-4">Crear Nuevo Evento</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
             <select
               value={tipoNuevo}
               onChange={(e) => setTipoNuevo(e.target.value)}
@@ -346,6 +370,12 @@ export default function OrganizadorPanel() {
               value={nombreNuevo}
               onChange={(e) => setNombreNuevo(e.target.value)}
               placeholder="Nombre del evento (ej: Fiesta de Zoe)"
+              className="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-orange-500 focus:outline-none"
+            />
+            <input
+              value={fechaNueva}
+              onChange={(e) => setFechaNueva(e.target.value)}
+              placeholder="Fecha (AAAAMMDD, ej: 20250927)"
               className="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-orange-500 focus:outline-none"
             />
             <button

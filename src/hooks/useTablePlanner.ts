@@ -187,7 +187,7 @@ export const useTablePlanner = (eventoId: string) => {
               numBabies,
               descripcion: combinedDescriptions,
               tableName: tableName?.trim() || (t.isMain ? 'Principal' : t.tableName),
-              isUsed: total > 0,
+              isUsed: total > 0, // Marcar como no usada si no hay invitados
               guestGroups,
             }
           : t
@@ -196,26 +196,41 @@ export const useTablePlanner = (eventoId: string) => {
 
     // Guardar en la base de datos
     try {
-      const mesaToSave = {
-        evento_id: eventoId,
-        table_id: tableId,
-        table_name: tableName?.trim() || null,
-        is_main: tableId === 'Principal',
-        is_used: total > 0,
-        num_adults: numAdults,
-        num_children: numChildren,
-        num_babies: numBabies,
-        descripcion: combinedDescriptions || null,
-        guest_groups: guestGroups || [],
-      };
+      if (total === 0) {
+        // Si no hay invitados, eliminar la mesa de la base de datos
+        const { error: deleteError } = await supabase
+          .from('mesas')
+          .delete()
+          .eq('evento_id', eventoId)
+          .eq('table_id', tableId);
 
-      const { error } = await supabase
-        .from('mesas')
-        .upsert([mesaToSave], { onConflict: 'evento_id,table_id' });
+        if (deleteError) throw new Error(`Error al eliminar la mesa ${tableId}: ${deleteError.message}`);
 
-      if (error) throw new Error(`Error al guardar la mesa ${tableId}: ${error.message}`);
+        console.log(`Mesa ${tableId} eliminada de la DB porque no tiene invitados.`);
+      } else {
+        // Guardar la mesa si tiene invitados
+        const mesaToSave = {
+          evento_id: eventoId,
+          table_id: tableId,
+          table_name: tableName?.trim() || null,
+          is_main: tableId === 'Principal',
+          is_used: total > 0,
+          num_adults: numAdults,
+          num_children: numChildren,
+          num_babies: numBabies,
+          descripcion: combinedDescriptions || null,
+          guest_groups: guestGroups || [],
+        };
 
-      console.log(`Mesa ${tableId} guardada exitosamente en la DB.`);
+        const { error } = await supabase
+          .from('mesas')
+          .upsert([mesaToSave], { onConflict: 'evento_id,table_id' });
+
+        if (error) throw new Error(`Error al guardar la mesa ${tableId}: ${error.message}`);
+
+        console.log(`Mesa ${tableId} guardada exitosamente en la DB.`);
+      }
+
       setShowModal(false);
       setSelected(null);
     } catch (error: any) {
@@ -272,24 +287,41 @@ export const useTablePlanner = (eventoId: string) => {
     }
 
     try {
-      const mesasToSave = tables.map(t => ({
-        evento_id: eventoId,
-        table_id: t.id,
-        table_name: t.tableName || null,
-        is_main: t.isMain,
-        is_used: (t.numAdults || 0) + (t.numChildren || 0) + (t.numBabies || 0) > 0,
-        num_adults: t.numAdults || 0,
-        num_children: t.numChildren || 0,
-        num_babies: t.numBabies || 0,
-        descripcion: t.descripcion || null,
-        guest_groups: t.guestGroups || [],
-      }));
+      // Filtrar mesas con invitados (isUsed: true)
+      const mesasToSave = tables
+        .filter(t => (t.numAdults || 0) + (t.numChildren || 0) + (t.numBabies || 0) > 0)
+        .map(t => ({
+          evento_id: eventoId,
+          table_id: t.id,
+          table_name: t.tableName || null,
+          is_main: t.isMain,
+          is_used: true,
+          num_adults: t.numAdults || 0,
+          num_children: t.numChildren || 0,
+          num_babies: t.numBabies || 0,
+          descripcion: t.descripcion || null,
+          guest_groups: t.guestGroups || [],
+        }));
 
-      const { error } = await supabase.from('mesas').upsert(
-        mesasToSave,
-        { onConflict: 'evento_id,table_id' }
-      );
-      if (error) throw new Error(`Error al guardar mesas: ${error.message}`);
+      // Obtener los IDs de las mesas que tienen invitados
+      const mesasConInvitadosIds = mesasToSave.map(m => m.table_id);
+
+      // Eliminar mesas que ya no tienen invitados
+      const { error: deleteError } = await supabase
+        .from('mesas')
+        .delete()
+        .eq('evento_id', eventoId)
+        .not('table_id', 'in', mesasConInvitadosIds);
+
+      if (deleteError) throw new Error(`Error al eliminar mesas no usadas: ${deleteError.message}`);
+
+      // Guardar o actualizar mesas con invitados
+      if (mesasToSave.length > 0) {
+        const { error } = await supabase
+          .from('mesas')
+          .upsert(mesasToSave, { onConflict: 'evento_id,table_id' });
+        if (error) throw new Error(`Error al guardar mesas: ${error.message}`);
+      }
 
       console.log('Mesas guardadas:', mesasToSave);
       setSaved(true);
