@@ -98,18 +98,17 @@ export const useTablePlanner = (eventoId: string) => {
 
       setTables(prev => prev.map(t => {
         const dbTable = tablesData?.find(dt => dt.table_id === t.id);
-        if (!dbTable) return { ...t, tableName: t.isMain ? 'Principal' : undefined, isUsed: false, numAdults: 0, numChildren: 0, numBabies: 0, guestGroups: [] };
+        if (!dbTable) return t;
 
         const guestGroups: GuestGroup[] = Array.isArray(dbTable.guest_groups) ? dbTable.guest_groups : [];
         const totalAdults = dbTable.num_adults || guestGroups.reduce((sum: number, group: GuestGroup) => sum + (group.numAdults || 0), 0);
         const totalChildren = dbTable.num_children || guestGroups.reduce((sum: number, group: GuestGroup) => sum + (group.numChildren || 0), 0);
         const totalBabies = dbTable.num_babies || guestGroups.reduce((sum: number, group: GuestGroup) => sum + (group.numBabies || 0), 0);
-        const totalGuests = totalAdults + totalChildren + totalBabies;
 
         return {
           ...t,
-          tableName: totalGuests > 0 ? (dbTable.table_name || (t.isMain ? 'Principal' : undefined)) : undefined,
-          isUsed: totalGuests > 0,
+          tableName: dbTable.table_name || (t.isMain ? 'Principal' : undefined),
+          isUsed: dbTable.is_used || false,
           numAdults: totalAdults,
           numChildren: totalChildren,
           numBabies: totalBabies,

@@ -16,9 +16,6 @@ const SalonLayout: React.FC<Props> = ({ tables, selectTable, warnings }) => {
       .filter(t => t.isAssignable)
       .map(t => [t.id, t.guestGroups?.length || 0])
   );
-  const tableDisplayNames = Object.fromEntries(
-    tables.map(t => [t.id, t.tableName || (t.isMain ? 'Principal' : 'Mesa sin asignar')])
-  );
 
   const tableCapacity = 10;
 
@@ -40,10 +37,10 @@ const SalonLayout: React.FC<Props> = ({ tables, selectTable, warnings }) => {
         </div>
 
         <div className="divide-y divide-orange-200 text-sm text-gray-700 space-y-4">
-          {/* Mesas cercanas a la entrada */}
+          {/* Mesas 1 y 2 */}
           <div className="pb-3">
             <p>
-              <span className="font-semibold">Mesas cercanas a la entrada:</span> usar solo en
+              <span className="font-semibold">Mesas 1 y 2:</span> usar solo en
               eventos con más de{" "}
               <span className="bg-orange-100 text-orange-800 rounded-full px-2 py-0.5 text-xs font-medium">
                 200 invitados
@@ -55,37 +52,37 @@ const SalonLayout: React.FC<Props> = ({ tables, selectTable, warnings }) => {
           {/* Mesas que se desarman */}
           <div className="pt-3">
             <p className="font-semibold mb-2">
-              Algunas mesas se desmontarán según el número total de invitados previstos entre la cena y el baile:
+              Estas mesas se desmontarán según el número total de invitados previstos entre la cena y el baile:
             </p>
             <ul className="space-y-1">
               <li>
-                60 a 80 personas → hasta{" "}
+                60 a 80 personas → mesas{" "}
                 <span className="bg-orange-100 text-orange-800 rounded-full px-2 text-xs font-medium">
-                  6 mesas
+                  8 a 13
                 </span>
               </li>
               <li>
-                81 a 120 personas → hasta{" "}
+                81 a 120 personas → mesas{" "}
                 <span className="bg-orange-100 text-orange-800 rounded-full px-2 text-xs font-medium">
-                  8 mesas
+                  6 a 13
                 </span>
               </li>
               <li>
-                121 a 160 personas → hasta{" "}
+                121 a 160 personas → mesas{" "}
                 <span className="bg-orange-100 text-orange-800 rounded-full px-2 text-xs font-medium">
-                  10 mesas
+                  3 a 13
                 </span>
               </li>
               <li>
-                161 a 200 personas → hasta{" "}
+                161 a 200 personas → mesas{" "}
                 <span className="bg-orange-100 text-orange-800 rounded-full px-2 text-xs font-medium">
-                  12 mesas
+                  3 a 17
                 </span>
               </li>
               <li>
-                201 a 260 personas → hasta{" "}
+                201 a 260 personas → mesas{" "}
                 <span className="bg-orange-100 text-orange-800 rounded-full px-2 text-xs font-medium">
-                  15 mesas
+                  3 a 18
                 </span>
               </li>
               <li>
@@ -107,7 +104,6 @@ const SalonLayout: React.FC<Props> = ({ tables, selectTable, warnings }) => {
           tableWarnings={tableWarnings}
           tableGuests={tableGuests}
           tableCapacity={tableCapacity}
-          tableDisplayNames={tableDisplayNames}
         />
       </div>
     </section>
