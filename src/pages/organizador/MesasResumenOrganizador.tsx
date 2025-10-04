@@ -12,6 +12,19 @@ const centerpieceOptions = [
   { id: "modern", name: "Centro proporcionado por el cliente" },
 ];
 
+const colorTranslations: { [key: string]: string } = {
+  white: "Blanco",
+  red: "Rojo",
+  blue: "Azul",
+  green: "Verde",
+  black: "Negro",
+  yellow: "Amarillo",
+  pink: "Rosa",
+  purple: "Púrpura",
+  gray: "Gris",
+  // Agrega más colores si es necesario
+};
+
 interface GuestGroup {
   id?: string;
   name: string;
@@ -327,8 +340,8 @@ export default function MesasResumenOrganizador() {
 
   const formatDecoracion = (decoracion: Decoracion | null) => [
     {
-      tablecloth: decoracion?.tablecloth || "No registrado",
-      napkin_color: decoracion?.napkin_color || "No registrado",
+      tablecloth: colorTranslations[decoracion?.tablecloth || ""] || decoracion?.tablecloth || "No registrado",
+      napkin_color: colorTranslations[decoracion?.napkin_color || ""] || decoracion?.napkin_color || "No registrado",
       centerpiece: centerpieceOptions.find((opt) => opt.id === decoracion?.centerpiece)?.name || decoracion?.centerpiece || "No registrado",
     },
   ];
