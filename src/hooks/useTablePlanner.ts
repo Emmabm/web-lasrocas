@@ -253,16 +253,16 @@ export const useTablePlanner = (eventoId: string): TablePlannerHook => {
       prev.map(t =>
         t.id === tableId
           ? {
-              ...t,
-              numAdults,
-              numChildren,
-              numBabies,
-              descripcion: combinedDescriptions,
-              tableName: total > 0 ? assignedTableName : undefined,
-              isUsed: total > 0,
-              guestGroups,
-              guests: guestGroups.map(g => g.name),
-            }
+            ...t,
+            numAdults,
+            numChildren,
+            numBabies,
+            descripcion: combinedDescriptions,
+            tableName: total > 0 ? assignedTableName : undefined,
+            isUsed: total > 0,
+            guestGroups,
+            guests: guestGroups.map(g => g.name),
+          }
           : t
       )
     );
@@ -389,12 +389,20 @@ export const useTablePlanner = (eventoId: string): TablePlannerHook => {
     }
 
     try {
+      // IDs de todas las mesas asignables posibles (de initialTables)
+      const allAssignableIds = initialTables
+        .filter(t => t.isAssignable)
+        .map(t => t.id);
+
       // Obtener las mesas usadas (las que tienen invitados o son la mesa principal)
       const usedTableIds = tables
         .filter(t => t.isUsed || t.isMain || (t.guestGroups && t.guestGroups.length > 0))
         .map(t => t.id);
 
-      // Preparar las mesas para guardar
+      // Calcular las mesas NO usadas (para eliminarlas explícitamente)
+      const nonUsedTableIds = allAssignableIds.filter(id => !usedTableIds.includes(id));
+
+      // Preparar las mesas para guardar (solo las usadas)
       const mesasToSave = tables
         .filter(t => t.isUsed || t.isMain)
         .map(t => ({
@@ -410,30 +418,32 @@ export const useTablePlanner = (eventoId: string): TablePlannerHook => {
           guest_groups: t.guestGroups || [],
         }));
 
-      // Guardar todas las mesas usadas
-      const { error: upsertError } = await supabase
-        .from('mesas')
-        .upsert(mesasToSave, { onConflict: 'evento_id,table_id' });
+      // Guardar o actualizar mesas usadas
+      if (mesasToSave.length > 0) {
+        const { error: upsertError } = await supabase
+          .from('mesas')
+          .upsert(mesasToSave, { onConflict: 'evento_id,table_id' });
 
-      if (upsertError) {
-        console.error('Error al guardar mesas:', upsertError.message);
-        throw new Error(`Error al guardar mesas: ${upsertError.message}`);
+        if (upsertError) {
+          console.error('Error al guardar mesas:', upsertError.message);
+          throw new Error(`Error al guardar mesas: ${upsertError.message}`);
+        }
       }
 
-      // Eliminar mesas no usadas solo si hay IDs de mesas usadas
-      if (usedTableIds.length > 0) {
+      // Eliminar mesas NO usadas (usando .in en lugar de .not.in para evitar el error de parsing)
+      if (nonUsedTableIds.length > 0) {
         const { error: deleteError } = await supabase
           .from('mesas')
           .delete()
           .eq('evento_id', eventoId)
-          .not('table_id', 'in', usedTableIds);
+          .in('table_id', nonUsedTableIds);
 
         if (deleteError) {
           console.error('Error al eliminar mesas no usadas:', deleteError.message);
           throw new Error(`Error al eliminar mesas no usadas: ${deleteError.message}`);
         }
-      } else {
-        // Si no hay mesas usadas, eliminar todas las mesas del evento
+      } else if (usedTableIds.length === 0) {
+        // Si no hay mesas usadas, eliminar TODAS las mesas del evento
         const { error: deleteAllError } = await supabase
           .from('mesas')
           .delete()
@@ -445,30 +455,14 @@ export const useTablePlanner = (eventoId: string): TablePlannerHook => {
         }
       }
 
-      // Guardar la decoración global
-      const { error: decoError } = await supabase
-        .from('decoracion_evento')
-        .upsert([{
-          evento_id: eventoId,
-          tablecloth: globalDecoration.tablecloth,
-          napkin_color: globalDecoration.napkinColor,
-          centerpiece: globalDecoration.centerpiece,
-        }], { onConflict: 'evento_id' });
-
-      if (decoError) {
-        console.error('Error al guardar decoración:', decoError.message);
-        throw new Error(`Error al guardar decoración: ${decoError.message}`);
-      }
-
+      console.log('Mesas guardadas:', mesasToSave);
       setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
-      alert('Distribución y decoración guardadas exitosamente.');
+      alert('Distribución de mesas guardada exitosamente.');
     } catch (error: any) {
       console.error('Error guardando mesas:', error.message);
-      alert(`Error al guardar la distribución: ${error.message}. Verifica tu conexión o permisos.`);
+      alert('Error al guardar la distribución de mesas: ' + error.message);
     }
-  }, [eventoId, tables, globalDecoration, getTableTotals]);
-
+  }, [tables, eventoId, getTableTotals]);
   useEffect(() => {
     loadTables();
   }, [loadTables]);

@@ -208,8 +208,8 @@ export default function MesasResumenOrganizador() {
     const dbTable = mesas.find((m) => m.table_id === table.id);
     return {
       ...table,
-      tableName: dbTable?.table_name || (table.isMain ? 'Principal' : table.tableName),
-      isUsed: dbTable ? dbTable.is_used || dbTable.is_main : table.isUsed,
+      tableName: dbTable?.table_name || (table.isMain ? 'Principal' : undefined),
+      isUsed: dbTable ? (dbTable.guest_groups?.length > 0 ? true : false) : false,
       numAdults: dbTable?.num_adults || 0,
       numChildren: dbTable?.num_children || 0,
       numBabies: dbTable?.num_babies || 0,
