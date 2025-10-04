@@ -37,52 +37,52 @@ const SalonLayout: React.FC<Props> = ({ tables, selectTable, warnings }) => {
         </div>
 
         <div className="divide-y divide-orange-200 text-sm text-gray-700 space-y-4">
-          {/* Mesas 1 y 2 */}
+          {/* Mesas aisladas */}
           <div className="pb-3">
             <p>
-              <span className="font-semibold">Mesas 1 y 2:</span> usar solo en
-              eventos con más de{" "}
+              <span className="font-semibold">Mesas aisladas (arriba a la izquierda):</span>{" "}
+              se utilizan únicamente en eventos con más de{" "}
               <span className="bg-orange-100 text-orange-800 rounded-full px-2 py-0.5 text-xs font-medium">
                 200 invitados
               </span>{" "}
-              a la cena, ya que suelen destinarse a tortas y dulces por estar más aisladas.
+              a la cena, ya que suelen destinarse a tortas y dulces por estar apartadas del resto.
             </p>
           </div>
 
           {/* Mesas que se desarman */}
           <div className="pt-3">
             <p className="font-semibold mb-2">
-              Estas mesas se desmontarán según el número total de invitados previstos entre la cena y el baile:
+              Según la cantidad total de invitados entre cena y baile, algunas mesas se desmontarán:
             </p>
             <ul className="space-y-1">
               <li>
-                60 a 80 personas → mesas{" "}
+                60 a 80 personas → se desmontan varias mesas del{" "}
                 <span className="bg-orange-100 text-orange-800 rounded-full px-2 text-xs font-medium">
-                  8 a 13
+                  centro del salón
                 </span>
               </li>
               <li>
-                81 a 120 personas → mesas{" "}
+                81 a 120 personas → se desmontan mesas{" "}
                 <span className="bg-orange-100 text-orange-800 rounded-full px-2 text-xs font-medium">
-                  6 a 13
+                  desde el centro hacia el fondo
                 </span>
               </li>
               <li>
-                121 a 160 personas → mesas{" "}
+                121 a 160 personas → se desmonta{" "}
                 <span className="bg-orange-100 text-orange-800 rounded-full px-2 text-xs font-medium">
-                  3 a 13
+                  la mayoría de las mesas centrales
                 </span>
               </li>
               <li>
-                161 a 200 personas → mesas{" "}
+                161 a 200 personas → se mantienen solo{" "}
                 <span className="bg-orange-100 text-orange-800 rounded-full px-2 text-xs font-medium">
-                  3 a 17
+                  las mesas cercanas al escenario y a los costados
                 </span>
               </li>
               <li>
-                201 a 260 personas → mesas{" "}
+                201 a 260 personas → se conservan principalmente{" "}
                 <span className="bg-orange-100 text-orange-800 rounded-full px-2 text-xs font-medium">
-                  3 a 18
+                  las mesas perimetrales (junto a la oficina y al DJ)
                 </span>
               </li>
               <li>

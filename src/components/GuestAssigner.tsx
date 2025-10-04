@@ -166,7 +166,7 @@ const GuestAssigner: React.FC<GuestAssignerProps> = ({ table, onClose, onSave, i
       <div ref={modalRef} className="bg-white rounded-lg shadow-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
         <div className="p-6">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold">Mesa {table.isMain ? 'Principal' : table.id}</h2>
+            <h2 className="text-xl font-semibold">Mesa {table.isMain ? 'Principal' : table.tableName || table.id}</h2>
             <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
               <X className="h-5 w-5" />
             </button>
@@ -262,7 +262,8 @@ const GuestAssigner: React.FC<GuestAssignerProps> = ({ table, onClose, onSave, i
               />
               <button
                 onClick={handleAddGroup}
-                className={`w-full px-4 py-2 rounded-md font-medium transition-colors ${isAddButtonDisabled ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-[#FF6B35] text-white hover:bg-[#FF6B35]/90'}`}
+                className={`w-full px-4 py-2 rounded-md GenstAssigner.tsx
+                rounded-md font-medium transition-colors ${isAddButtonDisabled ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-[#FF6B35] text-white hover:bg-[#FF6B35]/90'}`}
                 disabled={isAddButtonDisabled}
               >
                 Agregar Grupo

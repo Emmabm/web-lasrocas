@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "../../supabaseClient";
-import * as XLSX from "xlsx-js-style";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import FloorPlan from "../../components/FloorPlan";
@@ -96,6 +95,8 @@ export default function MesasResumenOrganizador() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const croquisRef = useRef<HTMLDivElement>(null);
+  const gruposRef = useRef<HTMLDivElement>(null);
+  const decoracionRef = useRef<HTMLDivElement>(null);
 
   const fetchMesasYDecoracion = async () => {
     setLoading(true);
@@ -153,11 +154,10 @@ export default function MesasResumenOrganizador() {
         );
 
         const mesasFiltradas = mesasData
-          .filter((m) => m.guest_groups?.length > 0) // Solo mesas con grupos asignados
           .sort((a, b) => {
             const isMainA = a.is_main || a.table_id.toLowerCase().includes("principal");
             const isMainB = b.is_main || b.table_id.toLowerCase().includes("principal");
-            if (isMainA && !isMainB) return -1; // Mesa Principal primero
+            if (isMainA && !isMainB) return -1;
             if (!isMainA && isMainB) return 1;
             const getNumber = (table_id: string) => {
               if (table_id.toLowerCase().includes("principal")) return -1;
@@ -244,152 +244,81 @@ export default function MesasResumenOrganizador() {
   );
 
   const exportToPDF = async () => {
-    if (croquisRef.current) {
-      const canvas = await html2canvas(croquisRef.current, { scale: 2 });
-      const imgData = canvas.toDataURL("image/png");
-      const pdf = new jsPDF("p", "mm", "a4");
-      const imgWidth = 190;
-      const pageHeight = 295;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      let heightLeft = imgHeight;
-      let position = 10;
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const pageWidth = 210;
+    const pageHeight = 295;
+    const margin = 10;
+    const maxWidth = pageWidth - 2 * margin;
+    let currentY = margin;
 
-      pdf.addImage(imgData, "PNG", 10, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
-
-      while (heightLeft >= 0) {
-        position = heightLeft - imgHeight;
+    // Helper function to add a new page if needed
+    const addPageIfNeeded = (requiredHeight: number) => {
+      if (currentY + requiredHeight > pageHeight - margin) {
         pdf.addPage();
-        pdf.addImage(imgData, "PNG", 10, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
+        currentY = margin;
       }
+    };
 
-      pdf.save(`Croquis_Mesas_${id}.pdf`);
-    }
-  };
+    // Title
+    pdf.setFontSize(16);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('Resumen de Mesas y Decoración', pageWidth / 2, currentY, { align: 'center' });
+    currentY += 10;
 
-  const exportToExcel = () => {
-    const workbook = XLSX.utils.book_new();
-    const guestTableData = [];
-    guestTableData.push(["Resumen de Mesas y Decoración"]);
-    guestTableData.push([]);
-    guestTableData.push(["Grupo Asignado", "Adultos", "Niños", "Bebés", "Mesa", "Observaciones"]);
+    // Croquis del Salón
+    if (croquisRef.current) {
+      pdf.setFontSize(12);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Croquis del Salón', margin, currentY);
+      currentY += 8;
 
-    mesas.forEach((mesa) => {
-      const mesaNombre = mesa.is_main
-        ? "Mesa Principal"
-        : mesa.table_name || `Mesa ${mesa.table_id ? mesa.table_id.replace(/\D/g, "") : "N/A"}`;
-      if (mesa.guest_groups?.length) {
-        mesa.guest_groups.forEach((grupo) => {
-          guestTableData.push([
-            grupo.name,
-            grupo.numAdults || "",
-            grupo.numChildren || "",
-            grupo.numBabies || "",
-            mesaNombre,
-            grupo.details || "",
-          ]);
-        });
-      }
-    });
+      const canvas = await html2canvas(croquisRef.current, { scale: 2 });
+      const imgData = canvas.toDataURL('image/png');
+      const imgWidth = maxWidth;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-    const totalAdultos = mesas.reduce(
-      (sum, mesa) => sum + (mesa.guest_groups?.reduce((s, g) => s + (g.numAdults || 0), 0) || 0),
-      0
-    );
-    const totalNinos = mesas.reduce(
-      (sum, mesa) => sum + (mesa.guest_groups?.reduce((s, g) => s + (g.numChildren || 0), 0) || 0),
-      0
-    );
-    const totalBebes = mesas.reduce(
-      (sum, mesa) => sum + (mesa.guest_groups?.reduce((s, g) => s + (g.numBabies || 0), 0) || 0),
-      0
-    );
-    guestTableData.push([]);
-    guestTableData.push(["Totales", totalAdultos || "", totalNinos || "", totalBebes || "", "", ""]);
-
-    const decoracionData = formatDecoracion(decoracion).map((item) => [
-      item.tablecloth,
-      item.napkin_color,
-      item.centerpiece,
-    ]);
-
-    const decorationTableData = [];
-    decorationTableData.push([]);
-    decorationTableData.push(["Detalles de Decoración"]);
-    decorationTableData.push(["Color del Mantel", "Color de Servilletas", "Centro de Mesa"]);
-    decorationTableData.push(...decoracionData);
-
-    const sheetData = [...guestTableData, ...decorationTableData];
-    const sheet = XLSX.utils.aoa_to_sheet(sheetData);
-
-    sheet["!cols"] = [
-      { wch: 25 },
-      { wch: 20 },
-      { wch: 20 },
-      { wch: 10 },
-      { wch: 20 },
-      { wch: 40 },
-    ];
-
-    const range = XLSX.utils.decode_range(sheet["!ref"]!);
-    for (let R = range.s.r; R <= range.e.r; ++R) {
-      for (let C = range.s.c; C <= range.e.c; ++C) {
-        const cellRef = XLSX.utils.encode_cell({ r: R, c: C });
-        if (!sheet[cellRef]) continue;
-
-        const isTitle = R === 0 || R === guestTableData.length;
-        const isHeader = R === 2 || R === guestTableData.length + 2;
-        const isTotal = R === guestTableData.length - 2;
-        const isGuestData = R > 2 && R < guestTableData.length - 2;
-        const isDecorationDataRow = R > guestTableData.length + 2;
-        const cellValue = sheet[XLSX.utils.encode_cell({ r: R, c: 0 })]?.v;
-        const isNoAsignado = isGuestData && (typeof cellValue === "string" && cellValue.includes("Sin asignar"));
-
-        const isDecorationTableColumn = isDecorationDataRow && C > 2;
-        if (isDecorationTableColumn) continue;
-
-        sheet[cellRef].s = {
-          border: {
-            top: { style: "thin" },
-            bottom: { style: "thin" },
-            left: { style: "thin" },
-            right: { style: "thin" },
-          },
-          alignment: {
-            vertical: "center",
-            horizontal: isHeader || isTitle ? "center" : "left",
-            wrapText: true,
-          },
-          font: {
-            bold: isHeader || isTitle || isTotal,
-            sz: isTitle ? 14 : isHeader ? 12 : isTotal ? 12 : 11,
-            color: isNoAsignado ? { rgb: "FF0000" } : { rgb: "000000" },
-          },
-          fill: isTitle
-            ? { fgColor: { rgb: "FFF9C4" } }
-            : isHeader
-            ? { fgColor: { rgb: "FFD700" } }
-            : isTotal
-            ? { fgColor: { rgb: "FFFBEA" } }
-            : isDecorationDataRow || isGuestData
-            ? { fgColor: { rgb: R % 2 === 0 ? "F5F5F5" : "FFFFFF" } }
-            : undefined,
-        };
-      }
+      addPageIfNeeded(imgHeight);
+      pdf.addImage(imgData, 'PNG', margin, currentY, imgWidth, imgHeight);
+      currentY += imgHeight + 10;
     }
 
-    XLSX.utils.book_append_sheet(workbook, sheet, "Resumen");
-    const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
-    const data = new Blob([excelBuffer], { type: "application/octet-stream" });
-    const url = window.URL.createObjectURL(data);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `Resumen_Mesas_${id}.xlsx`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(url);
+    // Distribución de Grupos
+    if (gruposRef.current) {
+      addPageIfNeeded(20);
+      pdf.setFontSize(12);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Distribución de Grupos', margin, currentY);
+      currentY += 8;
+
+      const canvas = await html2canvas(gruposRef.current, { scale: 2 });
+      const imgData = canvas.toDataURL('image/png');
+      const imgWidth = maxWidth;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+      addPageIfNeeded(imgHeight);
+      pdf.addImage(imgData, 'PNG', margin, currentY, imgWidth, imgHeight);
+      currentY += imgHeight + 10;
+    }
+
+    // Detalles de Decoración
+    if (decoracionRef.current) {
+      addPageIfNeeded(20);
+      pdf.setFontSize(12);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Detalles de Decoración', margin, currentY);
+      currentY += 8;
+
+      const canvas = await html2canvas(decoracionRef.current, { scale: 2 });
+      const imgData = canvas.toDataURL('image/png');
+      const imgWidth = maxWidth;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+      addPageIfNeeded(imgHeight);
+      pdf.addImage(imgData, 'PNG', margin, currentY, imgWidth, imgHeight);
+      currentY += imgHeight + 10;
+    }
+
+    pdf.save(`Resumen_Mesas_${id}.pdf`);
   };
 
   useEffect(() => {
@@ -444,15 +373,9 @@ export default function MesasResumenOrganizador() {
               tableCapacity={MAX_GUESTS}
             />
           </div>
-          <button
-            onClick={exportToPDF}
-            className="mt-4 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg shadow-md"
-          >
-            Exportar Croquis a PDF
-          </button>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-xl p-6 mb-8">
+        <div ref={gruposRef} className="bg-white rounded-2xl shadow-xl p-6 mb-8">
           <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">Distribución de Grupos</h2>
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm sm:text-base">
@@ -523,7 +446,7 @@ export default function MesasResumenOrganizador() {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-xl p-6 mb-8">
+        <div ref={decoracionRef} className="bg-white rounded-2xl shadow-xl p-6 mb-8">
           <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">Detalles de Decoración</h2>
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm sm:text-base">
@@ -559,10 +482,10 @@ export default function MesasResumenOrganizador() {
           </button>
           <div className="flex flex-col sm:flex-row gap-4">
             <button
-              onClick={exportToExcel}
-              className="bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-lg shadow-md"
+              onClick={exportToPDF}
+              className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg shadow-md"
             >
-              Exportar a Excel
+              Exportar a PDF
             </button>
             <button
               onClick={() => navigate(`/organizador/evento/${id}/cena`)}
