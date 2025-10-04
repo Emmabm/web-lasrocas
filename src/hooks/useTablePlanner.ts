@@ -33,7 +33,7 @@ const initialTables: Table[] = [
     isAssignable: true,
     isMain: i === 10,
     isUsed: false,
-    tableName: i === 10 ? 'Principal' : undefined,
+    tableName: i === 10 ? 'Principal' : undefined, // Sin número para mesas no principales
     tablecloth: 'white',
     napkinColor: 'white',
     centerpiece: 'none',
@@ -174,6 +174,25 @@ export const useTablePlanner = (eventoId: string) => {
       return;
     }
 
+    // Asignar un número de mesa secuencial si no es la mesa principal y no tiene tableName
+    let assignedTableName = tableName?.trim() || (isMainTable ? 'Principal' : undefined);
+    if (!isMainTable && total > 0 && !assignedTableName) {
+      const usedTableNumbers = tables
+        .filter(t => t.id !== tableId && t.isUsed && t.tableName && t.tableName.startsWith('M'))
+        .map(t => parseInt(t.tableName!.replace('M', '')))
+        .filter(num => !isNaN(num))
+        .sort((a, b) => a - b);
+
+      let nextNumber = 1;
+      for (let i = 1; i <= usedTableNumbers.length + 1; i++) {
+        if (!usedTableNumbers.includes(i)) {
+          nextNumber = i;
+          break;
+        }
+      }
+      assignedTableName = `M${nextNumber}`;
+    }
+
     const combinedDescriptions = guestGroups.map(g => g.details).filter(Boolean).join('; ') || undefined;
 
     // Actualizar estado local
@@ -186,8 +205,8 @@ export const useTablePlanner = (eventoId: string) => {
               numChildren,
               numBabies,
               descripcion: combinedDescriptions,
-              tableName: tableName?.trim() || (t.isMain ? 'Principal' : t.tableName),
-              isUsed: total > 0, // Marcar como no usada si no hay invitados
+              tableName: assignedTableName,
+              isUsed: total > 0,
               guestGroups,
             }
           : t
@@ -212,8 +231,8 @@ export const useTablePlanner = (eventoId: string) => {
         const mesaToSave = {
           evento_id: eventoId,
           table_id: tableId,
-          table_name: tableName?.trim() || null,
-          is_main: tableId === 'Principal',
+          table_name: assignedTableName || null,
+          is_main: isMainTable,
           is_used: total > 0,
           num_adults: numAdults,
           num_children: numChildren,
@@ -228,7 +247,7 @@ export const useTablePlanner = (eventoId: string) => {
 
         if (error) throw new Error(`Error al guardar la mesa ${tableId}: ${error.message}`);
 
-        console.log(`Mesa ${tableId} guardada exitosamente en la DB.`);
+        console.log(`Mesa ${tableId} guardada exitosamente en la DB con tableName: ${assignedTableName}.`);
       }
 
       setShowModal(false);
@@ -282,7 +301,7 @@ export const useTablePlanner = (eventoId: string) => {
         : (tableTotals[t.id] < MIN_GUESTS || tableTotals[t.id] > MAX_GUESTS)
     ));
     if (invalidTables.length > 0) {
-      alert(`No se puede guardar. Las siguientes mesas no cumplen con los límites de personas: ${invalidTables.map(t => t.isMain ? 'Principal' : t.id).join(', ')}`);
+      alert(`No se puede guardar. Las siguientes mesas no cumplen con los límites de personas: ${invalidTables.map(t => t.tableName || t.id).join(', ')}`);
       return;
     }
 
