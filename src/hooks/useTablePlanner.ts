@@ -33,7 +33,7 @@ const initialTables: Table[] = [
     isAssignable: true,
     isMain: i === 10,
     isUsed: false,
-    tableName: i === 10 ? 'Principal' : undefined, // Sin número para mesas no principales
+    tableName: i === 10 ? 'Principal' : undefined,
     tablecloth: 'white',
     napkinColor: 'white',
     centerpiece: 'none',
@@ -98,17 +98,18 @@ export const useTablePlanner = (eventoId: string) => {
 
       setTables(prev => prev.map(t => {
         const dbTable = tablesData?.find(dt => dt.table_id === t.id);
-        if (!dbTable) return t;
+        if (!dbTable) return { ...t, tableName: t.isMain ? 'Principal' : undefined, isUsed: false, numAdults: 0, numChildren: 0, numBabies: 0, guestGroups: [] };
 
         const guestGroups: GuestGroup[] = Array.isArray(dbTable.guest_groups) ? dbTable.guest_groups : [];
         const totalAdults = dbTable.num_adults || guestGroups.reduce((sum: number, group: GuestGroup) => sum + (group.numAdults || 0), 0);
         const totalChildren = dbTable.num_children || guestGroups.reduce((sum: number, group: GuestGroup) => sum + (group.numChildren || 0), 0);
         const totalBabies = dbTable.num_babies || guestGroups.reduce((sum: number, group: GuestGroup) => sum + (group.numBabies || 0), 0);
+        const totalGuests = totalAdults + totalChildren + totalBabies;
 
         return {
           ...t,
-          tableName: dbTable.table_name || (t.isMain ? 'Principal' : undefined),
-          isUsed: dbTable.is_used || false,
+          tableName: totalGuests > 0 ? (dbTable.table_name || (t.isMain ? 'Principal' : undefined)) : undefined,
+          isUsed: totalGuests > 0,
           numAdults: totalAdults,
           numChildren: totalChildren,
           numBabies: totalBabies,
@@ -205,9 +206,10 @@ export const useTablePlanner = (eventoId: string) => {
               numChildren,
               numBabies,
               descripcion: combinedDescriptions,
-              tableName: assignedTableName,
+              tableName: total > 0 ? assignedTableName : undefined,
               isUsed: total > 0,
               guestGroups,
+              guests: guestGroups.map(g => g.name), // Actualizar guests con los nombres de los grupos
             }
           : t
       )
@@ -301,7 +303,7 @@ export const useTablePlanner = (eventoId: string) => {
         : (tableTotals[t.id] < MIN_GUESTS || tableTotals[t.id] > MAX_GUESTS)
     ));
     if (invalidTables.length > 0) {
-      alert(`No se puede guardar. Las siguientes mesas no cumplen con los límites de personas: ${invalidTables.map(t => t.tableName || t.id).join(', ')}`);
+      alert(`No se puede guardar. Las siguientes mesas no cumplen con los límites de personas: ${invalidTables.map(t => t.tableName || 'Mesa sin asignar').join(', ')}`);
       return;
     }
 

@@ -3,11 +3,12 @@ import { Table } from '../types/types';
 
 interface FloorPlanProps {
   tables: Table[];
-  onTableMove?: (id: string, pos: { x: number; y: number }) => void; // Opcional, para mover mesas
+  onTableMove?: (id: string, pos: { x: number; y: number }) => void;
   onTableSelect: (id: string) => void;
   tableWarnings: string[];
   tableGuests: Record<string, number>;
   tableCapacity: number;
+  tableDisplayNames: Record<string, string>;
 }
 
 const FloorPlan: React.FC<FloorPlanProps> = ({
@@ -15,7 +16,8 @@ const FloorPlan: React.FC<FloorPlanProps> = ({
   onTableSelect,
   tableWarnings,
   tableGuests,
-  tableCapacity
+  tableCapacity,
+  tableDisplayNames,
 }) => {
   return (
     <div
@@ -63,10 +65,10 @@ const FloorPlan: React.FC<FloorPlanProps> = ({
                 transition: 'all 0.2s ease',
               }}
               onClick={() => onTableSelect(t.id)}
-              title={`Mesa ${t.tableName || t.id} - ${guests}/${tableCapacity}`}
+              title={`Mesa ${tableDisplayNames[t.id]} - ${guests}/${tableCapacity}`}
             >
               <span className={isUsed ? 'text-white text-sm font-semibold' : 'text-gray-700 text-sm font-semibold'}>
-                {t.tableName || t.id}
+                {tableDisplayNames[t.id]}
               </span>
 
               {guests > 0 && (
