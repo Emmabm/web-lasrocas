@@ -3,7 +3,7 @@ import { Table } from '../types/types';
 
 interface FloorPlanProps {
   tables: Table[];
-  onTableMove?: (id: string, pos: { x: number; y: number }) => void; // Opcional, para mover mesas
+  onTableMove?: (id: string, pos: { x: number; y: number }) => void;
   onTableSelect: (id: string) => void;
   tableWarnings: string[];
   tableGuests: Record<string, number>;
@@ -15,7 +15,7 @@ const FloorPlan: React.FC<FloorPlanProps> = ({
   onTableSelect,
   tableWarnings,
   tableGuests,
-  tableCapacity
+  tableCapacity,
 }) => {
   return (
     <div
