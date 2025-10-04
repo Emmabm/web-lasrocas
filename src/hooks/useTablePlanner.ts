@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { supabase } from '../supabaseClient';
 import { Table, GuestGroup } from '../types/types';
+import { Dispatch, SetStateAction } from 'react';
 
 const MIN_GUESTS = 8;
 const MAX_GUESTS = 11;
@@ -16,10 +17,10 @@ const RECT_WIDTH = 130;
 const RECT_HEIGHT = 60;
 
 const initialTables: Table[] = [
-  { id: 'ESCENARIO', position: { x: 365, y: 40 }, shape: 'rectangle', width: 190, height: 60, isAssignable: false, isMain: false, isUsed: false, numAdults: 0, numChildren: 0, numBabies: 0, descripcion: undefined, guestGroups: [], tableName: undefined, guests: [] },
-  { id: 'DJ', position: { x: 90, y: 480 }, shape: 'square', width: 110, height: 110, isAssignable: false, isMain: false, isUsed: false, numAdults: 0, numChildren: 0, numBabies: 0, descripcion: undefined, guestGroups: [], tableName: undefined, guests: [] },
-  { id: 'OFICINA', position: { x: 660, y: 480 }, shape: 'rectangle', width: 240, height: 110, isAssignable: false, isMain: false, isUsed: false, numAdults: 0, numChildren: 0, numBabies: 0, descripcion: undefined, guestGroups: [], tableName: undefined, guests: [] },
-  { id: 'PASARELA', position: { x: 320, y: 510 }, shape: 'rectangle', width: 500, height: 15, isAssignable: false, isMain: false, isUsed: false, numAdults: 0, numChildren: 0, numBabies: 0, descripcion: undefined, guestGroups: [], tableName: undefined, guests: [] },
+  { id: 'ESCENARIO', position: { x: 365, y: 40 }, shape: 'rectangle', width: 190, height: 60, isAssignable: false, isMain: false, isUsed: false, numAdults: 0, numChildren: 0, numBabies: 0, descripcion: undefined, guestGroups: [], tableName: 'ESCENARIO', guests: [] },
+  { id: 'DJ', position: { x: 90, y: 480 }, shape: 'square', width: 110, height: 110, isAssignable: false, isMain: false, isUsed: false, numAdults: 0, numChildren: 0, numBabies: 0, descripcion: undefined, guestGroups: [], tableName: 'DJ', guests: [] },
+  { id: 'OFICINA', position: { x: 660, y: 480 }, shape: 'rectangle', width: 240, height: 110, isAssignable: false, isMain: false, isUsed: false, numAdults: 0, numChildren: 0, numBabies: 0, descripcion: undefined, guestGroups: [], tableName: 'OFICINA', guests: [] },
+  { id: 'PASARELA', position: { x: 320, y: 510 }, shape: 'rectangle', width: 500, height: 15, isAssignable: false, isMain: false, isUsed: false, numAdults: 0, numChildren: 0, numBabies: 0, descripcion: undefined, guestGroups: [], tableName: 'PASARELA', guests: [] },
   ...[
     [-1, 1], [-1, 0], [0.2, 0], [0.2, 1], [0, 2], [0.7, 3], [1.2, 3.8], [2.3, 3.8],
     [1.8, 2.5], [1.5, 1.1], [2.2, 0], [3, 1], [3.3, 2], [3, 2.8], [3.5, 3.8],
@@ -59,7 +60,38 @@ export const centerpieceOptions = [
   { id: 'modern', name: 'Centro proporcionado por el cliente' }
 ];
 
-export const useTablePlanner = (eventoId: string) => {
+interface TablePlannerHook {
+  tables: Table[];
+  selectTable: (id: string) => void;
+  selected: Table | null;
+  setSelected: Dispatch<SetStateAction<Table | null>>;
+  showModal: boolean;
+  setShowModal: Dispatch<SetStateAction<boolean>>;
+  currentStep: number;
+  setCurrentStep: Dispatch<SetStateAction<number>>;
+  updateMesaCompleta: (
+    tableId: string,
+    guestGroups: GuestGroup[],
+    numAdults: number,
+    numChildren: number,
+    numBabies: number,
+    tableName?: string
+  ) => Promise<void>;
+  globalDecoration: { tablecloth: string; napkinColor: string; centerpiece: string };
+  updateGlobalDecoration: (tablecloth: string, napkinColor: string, centerpiece: string) => void;
+  guardarDistribucion: () => Promise<void>;
+  saved: boolean;
+  isBlocked: boolean;
+  tableTotals: { [key: string]: number };
+  tableclothOptions: typeof tableclothOptions;
+  centerpieceOptions: typeof centerpieceOptions;
+  warnings: string[];
+  nextStep: () => void;
+  prevStep: () => void;
+  guardarDecoracion: () => Promise<void>;
+}
+
+export const useTablePlanner = (eventoId: string): TablePlannerHook => {
   const [tables, setTables] = useState<Table[]>(initialTables);
   const [selected, setSelected] = useState<Table | null>(null);
   const [showModal, setShowModal] = useState(false);
@@ -77,6 +109,27 @@ export const useTablePlanner = (eventoId: string) => {
       return acc;
     }, {});
   }, [tables]);
+
+  const warnings = useMemo(() => {
+    const tableTotals = getTableTotals();
+    return tables
+      .filter(t => t.isAssignable && t.isUsed)
+      .filter(t => {
+        const total = tableTotals[t.id];
+        return t.isMain
+          ? total < MIN_GUESTS_MAIN || total > MAX_GUESTS_MAIN
+          : total < MIN_GUESTS || total > MAX_GUESTS;
+      })
+      .map(t => t.id);
+  }, [tables, getTableTotals]);
+
+  const nextStep = useCallback(() => {
+    setCurrentStep(prev => prev + 1);
+  }, []);
+
+  const prevStep = useCallback(() => {
+    setCurrentStep(prev => Math.max(1, prev - 1));
+  }, []);
 
   const loadTables = useCallback(async () => {
     if (!eventoId) return;
@@ -208,7 +261,7 @@ export const useTablePlanner = (eventoId: string) => {
               tableName: total > 0 ? assignedTableName : undefined,
               isUsed: total > 0,
               guestGroups,
-              guests: guestGroups.map(g => g.name), // Actualizar guests con los nombres de los grupos
+              guests: guestGroups.map(g => g.name),
             }
           : t
       )
@@ -270,6 +323,35 @@ export const useTablePlanner = (eventoId: string) => {
     );
   }, []);
 
+  const guardarDecoracion = useCallback(async () => {
+    if (!eventoId) {
+      console.error('No hay evento_id para guardar decoración.');
+      alert('Error: No se proporcionó un evento_id.');
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('decoracion_evento')
+        .upsert([{
+          evento_id: eventoId,
+          tablecloth: globalDecoration.tablecloth,
+          napkin_color: globalDecoration.napkinColor,
+          centerpiece: globalDecoration.centerpiece,
+        }], { onConflict: 'evento_id' });
+
+      if (error) {
+        console.error('Error al guardar decoración:', error.message);
+        throw new Error(`Error al guardar decoración: ${error.message}`);
+      }
+
+      alert('Decoración guardada exitosamente.');
+    } catch (error: any) {
+      console.error('Error al guardar decoración:', error.message);
+      alert(`Error al guardar decoración: ${error.message}. Verifica tu conexión o permisos.`);
+    }
+  }, [eventoId, globalDecoration]);
+
   const guardarDistribucion = useCallback(async () => {
     if (!eventoId) {
       console.error('No hay evento_id para guardar mesas.');
@@ -302,20 +384,25 @@ export const useTablePlanner = (eventoId: string) => {
         : (tableTotals[t.id] < MIN_GUESTS || tableTotals[t.id] > MAX_GUESTS)
     ));
     if (invalidTables.length > 0) {
-      alert(`No se puede guardar. Las siguientes mesas no cumplen con los límites de personas: ${invalidTables.map(t => t.tableName || 'Mesa sin asignar').join(', ')}`);
+      alert(`No se puede guardar. Las siguientes mesas no cumplen con los límites de personas: ${invalidTables.map(t => t.tableName || t.id).join(', ')}`);
       return;
     }
 
     try {
-      // Filtrar mesas con invitados (isUsed: true)
+      // Obtener las mesas usadas (las que tienen invitados o son la mesa principal)
+      const usedTableIds = tables
+        .filter(t => t.isUsed || t.isMain || (t.guestGroups && t.guestGroups.length > 0))
+        .map(t => t.id);
+
+      // Preparar las mesas para guardar
       const mesasToSave = tables
-        .filter(t => (t.numAdults || 0) + (t.numChildren || 0) + (t.numBabies || 0) > 0)
+        .filter(t => t.isUsed || t.isMain)
         .map(t => ({
           evento_id: eventoId,
           table_id: t.id,
           table_name: t.tableName || null,
           is_main: t.isMain,
-          is_used: true,
+          is_used: t.isUsed,
           num_adults: t.numAdults || 0,
           num_children: t.numChildren || 0,
           num_babies: t.numBabies || 0,
@@ -323,112 +410,99 @@ export const useTablePlanner = (eventoId: string) => {
           guest_groups: t.guestGroups || [],
         }));
 
-      // Obtener los IDs de las mesas que tienen invitados
-      const mesasConInvitadosIds = mesasToSave.map(m => m.table_id);
-
-      // Eliminar mesas que ya no tienen invitados
-      const { error: deleteError } = await supabase
+      // Guardar todas las mesas usadas
+      const { error: upsertError } = await supabase
         .from('mesas')
-        .delete()
-        .eq('evento_id', eventoId)
-        .not('table_id', 'in', mesasConInvitadosIds);
+        .upsert(mesasToSave, { onConflict: 'evento_id,table_id' });
 
-      if (deleteError) throw new Error(`Error al eliminar mesas no usadas: ${deleteError.message}`);
-
-      // Guardar o actualizar mesas con invitados
-      if (mesasToSave.length > 0) {
-        const { error } = await supabase
-          .from('mesas')
-          .upsert(mesasToSave, { onConflict: 'evento_id,table_id' });
-        if (error) throw new Error(`Error al guardar mesas: ${error.message}`);
+      if (upsertError) {
+        console.error('Error al guardar mesas:', upsertError.message);
+        throw new Error(`Error al guardar mesas: ${upsertError.message}`);
       }
 
-      console.log('Mesas guardadas:', mesasToSave);
-      setSaved(true);
-      alert('Distribución de mesas guardada exitosamente.');
-    } catch (error: any) {
-      console.error('Error guardando mesas:', error.message);
-      alert('Error al guardar la distribución de mesas: ' + error.message);
-    }
-  }, [tables, eventoId, getTableTotals]);
+      // Eliminar mesas no usadas solo si hay IDs de mesas usadas
+      if (usedTableIds.length > 0) {
+        const { error: deleteError } = await supabase
+          .from('mesas')
+          .delete()
+          .eq('evento_id', eventoId)
+          .not('table_id', 'in', usedTableIds);
 
-  const guardarDecoracion = useCallback(async () => {
-    if (!eventoId) {
-      console.error('No hay evento_id para guardar decoración.');
-      alert('Error: No se proporcionó un evento_id.');
-      return;
-    }
+        if (deleteError) {
+          console.error('Error al eliminar mesas no usadas:', deleteError.message);
+          throw new Error(`Error al eliminar mesas no usadas: ${deleteError.message}`);
+        }
+      } else {
+        // Si no hay mesas usadas, eliminar todas las mesas del evento
+        const { error: deleteAllError } = await supabase
+          .from('mesas')
+          .delete()
+          .eq('evento_id', eventoId);
 
-    // Verificar el estado del evento
-    const { data: eventData, error: eventError } = await supabase
-      .from('eventos')
-      .select('estado')
-      .eq('id', eventoId)
-      .single();
+        if (deleteAllError) {
+          console.error('Error al eliminar todas las mesas:', deleteAllError.message);
+          throw new Error(`Error al eliminar todas las mesas: ${deleteAllError.message}`);
+        }
+      }
 
-    if (eventError || !eventData) {
-      console.error('Error al cargar el evento:', eventError?.message);
-      alert('Error al cargar el evento.');
-      return;
-    }
-
-    if (eventData.estado === 'inactivo') {
-      alert('El evento está inactivo. No podés realizar modificaciones.');
-      return;
-    }
-
-    try {
-      const { error } = await supabase.from('decoracion_evento').upsert(
-        {
+      // Guardar la decoración global
+      const { error: decoError } = await supabase
+        .from('decoracion_evento')
+        .upsert([{
           evento_id: eventoId,
           tablecloth: globalDecoration.tablecloth,
           napkin_color: globalDecoration.napkinColor,
-          centerpiece: globalDecoration.centerpiece
-        },
-        { onConflict: 'evento_id' }
-      );
-      if (error) throw new Error(`Error al guardar decoración: ${error.message}`);
-      console.log('Decoración global guardada:', globalDecoration);
+          centerpiece: globalDecoration.centerpiece,
+        }], { onConflict: 'evento_id' });
+
+      if (decoError) {
+        console.error('Error al guardar decoración:', decoError.message);
+        throw new Error(`Error al guardar decoración: ${decoError.message}`);
+      }
+
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+      alert('Distribución y decoración guardadas exitosamente.');
     } catch (error: any) {
-      console.error('Error guardando decoración:', error.message);
-      alert('Error al guardar la decoración: ' + error.message);
+      console.error('Error guardando mesas:', error.message);
+      alert(`Error al guardar la distribución: ${error.message}. Verifica tu conexión o permisos.`);
     }
-  }, [globalDecoration, eventoId]);
-
-  const nextStep = useCallback(() => setCurrentStep(p => p + 1), []);
-  const prevStep = useCallback(() => setCurrentStep(p => Math.max(p - 1, 1)), []);
-
-  const warnings = useMemo(() =>
-    tables.filter(t => t.isAssignable && t.isUsed && (
-      t.isMain
-        ? ((t.numAdults || 0) + (t.numChildren || 0) + (t.numBabies || 0) < MIN_GUESTS_MAIN || (t.numAdults || 0) + (t.numChildren || 0) + (t.numBabies || 0) > MAX_GUESTS_MAIN)
-        : ((t.numAdults || 0) + (t.numChildren || 0) + (t.numBabies || 0) < MIN_GUESTS || (t.numAdults || 0) + (t.numChildren || 0) + (t.numBabies || 0) > MAX_GUESTS)
-    )),
-    [tables]
-  );
+  }, [eventoId, tables, globalDecoration, getTableTotals]);
 
   useEffect(() => {
     loadTables();
   }, [loadTables]);
 
+  const isBlocked = useMemo(() => {
+    const tableTotals = getTableTotals();
+    return tables.some(t => t.isAssignable && t.isUsed && (
+      t.isMain
+        ? (tableTotals[t.id] < MIN_GUESTS_MAIN || tableTotals[t.id] > MAX_GUESTS_MAIN)
+        : (tableTotals[t.id] < MIN_GUESTS || tableTotals[t.id] > MAX_GUESTS)
+    ));
+  }, [tables, getTableTotals]);
+
   return {
     tables,
-    selected,
-    showModal,
-    currentStep,
-    globalDecoration,
-    saved,
-    warnings,
     selectTable,
+    selected,
+    setSelected,
+    showModal,
+    setShowModal,
+    currentStep,
+    setCurrentStep,
     updateMesaCompleta,
+    globalDecoration,
     updateGlobalDecoration,
     guardarDistribucion,
-    guardarDecoracion,
+    saved,
+    isBlocked,
+    tableTotals: getTableTotals(),
+    tableclothOptions,
+    centerpieceOptions,
+    warnings,
     nextStep,
     prevStep,
-    setShowModal,
-    setSelected,
-    setSaved,
-    getTableTotals,
+    guardarDecoracion,
   };
 };

@@ -6,11 +6,10 @@ import { Info } from 'lucide-react';
 interface Props {
   tables: Table[];
   selectTable: (id: string) => void;
-  warnings: Table[];
+  warnings: string[]; // Cambiado de Table[] a string[]
 }
 
 const SalonLayout: React.FC<Props> = ({ tables, selectTable, warnings }) => {
-  const tableWarnings = warnings.map(t => t.id);
   const tableGuests = Object.fromEntries(
     tables
       .filter(t => t.isAssignable)
@@ -101,7 +100,7 @@ const SalonLayout: React.FC<Props> = ({ tables, selectTable, warnings }) => {
         <FloorPlan
           tables={tables}
           onTableSelect={selectTable}
-          tableWarnings={tableWarnings}
+          tableWarnings={warnings} // Usamos warnings directamente, ya que es string[]
           tableGuests={tableGuests}
           tableCapacity={tableCapacity}
         />
