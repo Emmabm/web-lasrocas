@@ -122,7 +122,8 @@ const GuestAssigner: React.FC<GuestAssignerProps> = ({ table, onClose, onSave, i
     const minGuests = table.isMain ? MIN_GUESTS_MAIN : MIN_GUESTS;
     const maxGuests = table.isMain ? MAX_GUESTS_MAIN : MAX_GUESTS;
 
-    if (totalGuests === 0 || totalGuests < minGuests || totalGuests > maxGuests) {
+    // Allow saving if totalGuests is 0 or within valid range
+    if (totalGuests > 0 && (totalGuests < minGuests || totalGuests > maxGuests)) {
       return;
     }
 
@@ -143,7 +144,7 @@ const GuestAssigner: React.FC<GuestAssignerProps> = ({ table, onClose, onSave, i
     (newGroup.numAdults + newGroup.numChildren + newGroup.numBabies) === 0 ||
     (totalGuests + (newGroup.numAdults + newGroup.numChildren + newGroup.numBabies) > maxGuests);
 
-  const isSaveButtonDisabled = isBlocked || totalGuests === 0 || totalGuests < minGuests || totalGuests > maxGuests;
+  const isSaveButtonDisabled = isBlocked || (totalGuests > 0 && (totalGuests < minGuests || totalGuests > maxGuests));
 
   const getLimitMessage = () => {
     if (isBlocked) return 'El evento está inactivo. No podés realizar modificaciones.';
@@ -152,7 +153,6 @@ const GuestAssigner: React.FC<GuestAssignerProps> = ({ table, onClose, onSave, i
 
   const getSaveMessage = () => {
     if (isBlocked) return 'El evento está inactivo. No podés realizar modificaciones.';
-    if (totalGuests === 0) return 'No se puede guardar una mesa sin invitados.';
     if (totalGuests > 0 && totalGuests < minGuests) return `No se puede guardar una mesa con menos de ${minGuests} personas.`;
     if (totalGuests > maxGuests) return `No se puede guardar una mesa con más de ${maxGuests} personas.`;
     return '';
